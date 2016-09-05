@@ -1,0 +1,313 @@
+<PUBLIC:COMPONENT
+    lightWeight = true
+>
+
+<PUBLIC:DEFAULTS
+    contentEditable = false
+    tabStop = true
+/>
+
+<PUBLIC:attach event="ondocumentready" onevent="initCoolCombo()" />
+<PUBLIC:attach event="ondetach" onevent="cleanupCoolCombo()" />
+<PUBLIC:attach event="onmouseover" onevent="coolComboOnMouseOver()" />
+<PUBLIC:attach event="onmouseout" onevent="coolComboOnMouseOut()" />
+<PUBLIC:attach event="onmousedown" onevent="coolComboOnMouseDown()" />
+<PUBLIC:attach event="onmouseup" onevent="coolComboOnMouseUp()" />
+
+<PUBLIC:property name="enabled" value=true />
+<PUBLIC:property name="dropdownState" value=false />
+
+<PUBLIC:method   name="hideDropdownEx" />
+
+<script language="VBScript">
+
+' ----------------------------------------------------
+' IEWidgets: CoolCombo
+'                                                     
+' Copyright ©2002 Stedy Software and Systems          
+' Please see http://www.stedy.com for terms of use.   
+' ----------------------------------------------------
+
+option explicit
+
+dim childEdit
+dim childButton
+dim childDropdown
+dim toggleValue
+dim procRef
+dim procRefOver
+dim procRefOut
+
+sub initCoolCombo
+	element.nowrap = true
+	set procRef = GetRef("hideDropdownEx")
+	set procRefOver = GetRef("coolComboDropdownOnMouseOver")
+	set procRefOut = GetRef("coolComboDropdownOnMouseOut")
+	toggleValue = false
+	with window
+		.attachEvent "onload", GetRef("actionOnLoad")
+	end with
+	with window.document
+		set childButton = .getElementById(cstr(id & "Button"))
+		set childEdit = .getElementById(cstr(id & "Edit"))
+		set childDropdown = .getElementById(cstr(id & "Dropdown"))
+	end with
+	with childEdit.style
+		.top = -1
+		.height = element.offsetHeight - 2
+		.width = element.offsetWidth - childButton.offsetWidth - 2
+	end with
+	with childButton.style
+		.top = -1
+		.left = -1
+		.height = element.offsetHeight - 4
+	end with
+end sub
+
+sub cleanupCoolCombo
+	with window
+		.detachEvent "onload", GetRef("actionOnLoad")
+	end with
+	set procRef = nothing
+	set procRefOver = nothing
+	set procRefOut = nothing
+	set childButton = nothing
+	set childEdit = nothing
+	set childDropdown = nothing
+end sub
+
+sub actionOnLoad
+	fixDropDown
+end sub
+
+sub fixDropDown()
+	
+	dim childItem, elW
+	
+	childDropdown.nowrap = true
+	
+	elW = childDropdown.offsetWidth
+	
+	for each childItem in childDropdown.children
+		with childItem
+			if .className = "coolComboItem" then
+				.style.width = elW - 2
+			end if
+		end with
+	next
+	
+end sub
+
+sub coolComboOnMouseOver
+	
+	if not enabled then exit sub
+
+	dim el
+	
+	set el = window.event.srcElement
+	
+	if (el.className = "coolComboButton") or (el.className = "coolComboEdit") then
+		set el = el.parentElement
+		if el.className = "coolCombo" and not toggleValue then
+			with el.style
+				.borderTop = "1px solid buttonshadow"
+				.borderLeft = "1px solid buttonshadow"
+				.borderRight = "1px solid buttonhighlight"
+				.borderBottom = "1px solid buttonhighlight"
+			end with
+			childEdit.style.posWidth = el.offsetWidth - childButton.offsetWidth - 3
+			with childButton.style
+				.left = "0px"
+				.borderTop = "1px solid buttonhighlight"
+				.borderLeft = "1px solid buttonhighlight"
+				.borderRight = "1px solid buttonshadow"
+				.borderBottom = "1px solid buttonshadow"
+			end with
+		end if
+	end if
+	
+	set el = nothing
+
+end sub
+
+sub coolComboOnMouseOut
+	if not enabled then exit sub
+
+	dim el, toEl
+	
+	set el = window.event.srcElement
+	
+	if (el.className = "coolComboButton") or (el.className = "coolComboEdit") then
+		set toEl = window.event.toElement
+		if not toEl is nothing then
+			if (toEl.className = "coolComboButton") or (toEl.className = "coolComboEdit") then 
+				set toEl = nothing
+				exit sub
+			end if
+		end if
+		set toEl = nothing
+		set el = el.parentElement
+		if el.className = "coolCombo" and not toggleValue then
+			el.style.border = "1px solid buttonface"
+			childEdit.style.posWidth = el.offsetWidth - childButton.offsetWidth - 2
+			with childButton.style
+				.left = "-1px"
+				.border = "1px solid window"
+			end with
+		end if
+	end if
+	
+	set el = nothing
+
+end sub
+
+sub coolComboOnMouseDown
+	dim el
+	
+	set el = window.event.srcElement
+	
+	if (el.className = "coolComboButton") then
+		with childButton.style
+			.borderTop = "1px solid buttonshadow"
+			.borderLeft = "1px solid buttonshadow"
+			.borderRight = "1px solid buttonhighlight"
+			.borderBottom = "1px solid buttonhighlight"
+		end with
+		if not toggleValue then showDropdown
+		toggleValue = not toggleValue
+	end if
+
+end sub
+
+sub coolComboOnMouseUp
+	dim el
+	
+	set el = window.event.srcElement
+	
+	if (el.className = "coolComboButton") and not toggleValue then
+		with childButton.style
+			.borderTop = "1px solid buttonhighlight"
+			.borderLeft = "1px solid buttonhighlight"
+			.borderRight = "1px solid buttonshadow"
+			.borderBottom = "1px solid buttonshadow"
+		end with
+		hideDropdown
+	end if
+end sub
+
+sub coolComboDropdownOnMouseOver
+	dim el
+	set el = window.event.srcElement
+	if (el.tagName = "IMG") then
+		set el = el.parentElement
+	end if
+	if el.className = "coolComboItem" then
+		with el.style
+			.background = "highlight"
+			.color = "highlighttext"
+		end with
+	end if
+	set el = nothing
+end sub
+
+sub coolComboDropdownOnMouseOut
+	dim el
+	set el = window.event.srcElement
+	if (el.tagName = "IMG") then
+		set el = el.parentElement
+	end if
+	if el.className = "coolComboItem" then
+		with el.style
+			.background = "window"
+			.color = "windowtext"
+		end with
+	end if
+	set el = nothing
+end sub
+
+sub showDropdown
+	if childDropdown is nothing then exit sub
+	childDropdown.style.zIndex = 90
+	if instr(parentElement.id, "bar") <> 0 then
+		select case parentElement.docked
+			case 0 'float
+				with childDropdown.style
+					.left = parentElement.offsetLeft + element.offsetLeft + 1
+					.top = parentElement.offsetTop + element.offsetTop + element.offsetHeight + 2
+				end with
+			case 1 'top
+				with childDropdown.style
+					.left = parentElement.offsetLeft + element.offsetLeft
+					.top = parentElement.offsetTop + element.offsetTop + element.offsetHeight + 1
+				end with
+			case 2 'bottom
+				with childDropdown.style
+					.left = parentElement.offsetLeft + element.offsetLeft
+					.top = (parentElement.offsetTop + element.offsetTop) - childDropdown.offsetHeight + 3
+				end with
+			case 4 'left
+			case 8 'right
+		end select
+	else
+		with childDropdown.style
+			.left = parentElement.offsetLeft +  element.offsetLeft
+			.top = element.offsetTop + element.offsetHeight
+		end with
+		
+	end if
+	with window.document
+		.attachEvent "onmousedown", procRef
+		.attachEvent "onmouseover", procRefOver
+		.attachEvent "onmouseout", procRefOut
+	end with
+	with childDropdown
+		.style.filter = "blendTrans(duration=0.50) progid:DXImageTransform.Microsoft.Shadow(color=#323232, direction=135, strength=3)"
+		.filters.blendTrans.apply()
+		.style.visibility = "visible"
+		.filters.blendTrans.play()
+	end with
+	dropdownState = true
+end sub
+
+sub hideDropdownEx
+	dim el
+	set el = window.event.srcElement
+	if (el.className = "coolComboButton") or (el.className = "coolComboEdit") then exit sub
+	if childDropdown is nothing then exit sub
+	if (el.className = "coolComboItem") then
+		childEdit.value = el.innerText
+		with el.style
+			.background = "window"
+			.color = "windowtext"
+		end with
+	end if
+	childDropdown.style.visibility = "hidden"
+	with window.document
+		.detachEvent "onmousedown", procRef
+		.detachEvent "onmouseover", procRefOver
+		.detachEvent "onmouseout", procRefOut
+	end with
+	element.dropdownState = false
+	toggleValue = false
+	element.style.border = "1px solid buttonface"
+	childEdit.style.posWidth = element.offsetWidth - childButton.offsetWidth - 2
+	with childButton.style
+		.left = "-1px"
+		.border = "1px solid window"
+	end with
+end sub
+
+sub hideDropdown
+	if childDropdown is nothing then exit sub
+	childDropdown.style.visibility = "hidden"
+	with window.document
+		.detachEvent "onmousedown", procRef
+		.detachEvent "onmouseover", procRefOver
+		.detachEvent "onmouseout", procRefOut
+	end with
+	element.dropdownState = false
+end sub
+
+</script>
+
+</PUBLIC:COMPONENT>

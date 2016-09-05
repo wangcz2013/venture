@@ -1,0 +1,220 @@
+<PUBLIC:COMPONENT
+    lightWeight = true
+>
+
+<PUBLIC:DEFAULTS
+    contentEditable = false
+    tabStop = true
+/>
+
+<PUBLIC:attach event="ondocumentready" onevent="initCoolMask()" />
+<PUBLIC:attach event="ondetach" onevent="cleanupCoolMask()" />
+
+<PUBLIC:property name="maskType" value="" />
+<PUBLIC:property name="realValue" value="" />
+
+<script language="VBScript">
+
+' ----------------------------------------------------
+' IEWidgets: CoolMask
+'                                                     
+' Copyright ©2002 Stedy Software and Systems          
+' Please see http://www.stedy.com for terms of use.   
+' ----------------------------------------------------
+
+
+sub initCoolMask()
+	attachEvent "onreadystatechange", GetRef("coolMaskInputBlur")
+	attachEvent "onfocus", GetRef("coolMaskInputFocus")
+	attachEvent "onblur", GetRef("coolMaskInputBlur")
+	coolMaskInputBlur		
+end sub
+
+sub cleanupCoolMask()
+	detachEvent "onreadystatechange", GetRef("coolMaskInputBlur")
+	detachEvent "onfocus", GetRef("coolMaskInputFocus")
+	detachEvent "onblur", GetRef("coolMaskInputBlur")
+end sub
+
+sub coolMaskInputFocus()
+	with element
+		if not .realValue = "" then	.value = .realValue
+		.select()
+	end with
+end sub
+
+sub coolMaskInputBlur()
+	with element
+		select case ucase(.maskType)
+		    case "SHORTDATE"
+				.realValue = .value
+		        .value = maskDate(.value, "short") 
+		    case "MEDIUMDATE"
+				.realValue = .value
+		        .value = maskDate(.value, "medium") 
+		    case "LONGDATE"
+				.realValue = .value
+		        .value = maskDate(.value, "long") 
+		    case "ZIPCODE"
+				.realValue = parseChar(.value, array(" ", "-"))
+				.value = maskZip(.value)
+		    case "SSN"              
+				.realValue = parseChar(.value, array(" ", "-"))
+		        .value = maskSSN(.value) 
+		    case "PHONE"
+				.realValue = parseChar(.value, array(" ", "(", ")", "-", "."))
+		        .value = maskPhone(.value) 
+		    case "CURRENCY"
+				.realValue = parseChar(.value, array(" ", "$", ","))
+		        .value = maskCurrency(.value) 
+		    case "PERCENT"
+				.realValue = parseChar(.value, array(" ", "%"))
+		        .value = maskPercent(.value) 
+		    case else
+				.realValue = .value
+		end select          
+	end with
+end sub
+
+function parseChar(sStr, sChar)
+    dim i, zChar, sNewStr
+    if typeName(sChar) = "string" then zChar = Array(sChar) else zChar = sChar
+    sNewStr = sStr
+	for i = lBound(zChar) to uBound(zChar)
+		sNewStr = replace(sNewStr, cstr(zChar(i)), "")
+    next
+    parseChar = sNewStr
+end function
+
+function setViewState(bState)
+	with element
+		if not bState then
+			.runtimeStyle.color = .style.color
+		else
+			.runtimeStyle.color = "red"
+		end if
+	end with
+end function
+
+'******************
+'masking functions
+'******************
+
+function maskDate(sValue, sType)
+	dim zMonth
+	zMonth = array("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
+	if len(trim(sValue)) = 0 then
+		maskDate = ""
+		setViewState false
+	elseif not(isDate(sValue)) then
+		maskDate = "# INVALID DATE ENTERED #"
+		setViewState true
+	else
+		select case (sType)
+		    case "medium"               
+		        maskDate = day(dateValue(sValue)) & "-" & left(zMonth(month(dateValue(sValue)) - 1), 3) & "-" & year(dateValue(sValue))
+		    case "long"                 
+		        maskDate = zMonth(month(dateValue(sValue)) - 1) & " " & day(dateValue(sValue)) & ", " & year(dateValue(sValue))
+		    case else                     
+		        maskDate = formatDateTime(sValue, vbShortDate)		        
+		end select
+		setViewState false
+	end if
+end function
+
+function maskZip(sValue)
+	dim sNewValue
+    sNewValue = parseChar(sValue, array(" ", "-"))
+	if len(sNewValue) = 0 then
+		maskZip = ""
+		setViewState false
+	elseif (len(sNewValue) <> 5 and len(sNewValue) <> 9) or not isnumeric(sNewValue) then
+		maskZip = "# INVALID ZIPCODE ENTERED #"
+		setViewState true
+	else
+		if len(sNewValue) = 9 then sNewValue = left(sNewValue, 5) & "-" & right(sNewValue, 4)
+		maskZip = sNewValue
+		setViewState false
+	end if
+end function
+
+function maskSSN(sValue)
+	dim sNewValue
+    sNewValue = parseChar(sValue, array(" ", "-"))
+	if len(sNewValue) = 0 then
+		maskSSN = ""
+		setViewState false
+	elseif len(sNewValue) <> 9 or not isnumeric(sNewValue) then
+		maskSSN = "# INVALID SSN ENTERED #"
+		setViewState true
+	else
+		maskSSN = left(sNewValue, 3) & "-" & mid(sNewValue, 4, 2) & "-" & right(sNewValue, 4)
+		setViewState false
+	end if
+end function
+
+function maskPhone(sValue)
+	dim sNewValue
+    sNewValue = parseChar(sValue, array(" ", "(", ")", "-", "."))
+	if len(sNewValue) = 0 then
+		maskPhone = ""
+		setViewState false
+	elseif (len(sNewValue) <> 7 and len(sNewValue) <> 10) or not isnumeric(sNewValue) then
+		maskPhone = "# INVALID PHONE NUMBER ENTERED #"
+		setViewState true
+	else
+		select case len(sNewValue)
+			case 7
+				maskPhone = left(sNewValue, 3) & "-" & right(sNewValue, 4)
+			case 10
+				maskPhone = "(" & left(sNewValue, 3) & ") " & mid(sNewValue, 4, 3) & "-" & right(sNewValue, 4)
+		end select
+		setViewState false
+	end if
+end function
+
+function maskCurrency(sValue) 
+	dim sNewValue
+    sNewValue = parseChar(sValue, array(" ", "$", ","))
+	if len(sNewValue) = 0 then
+		maskCurrency = ""
+		setViewState false
+	else
+		on error resume next
+		err.clear
+		maskCurrency = formatCurrency(sNewValue)
+		if err.number = 13 then
+		    on error goto 0
+			maskCurrency = "# INVALID DOLLAR AMOUNT ENTERED #"
+			setViewState true
+			exit function
+		end if
+		on error goto 0
+		setViewState false
+	end if
+end function
+
+function maskPercent(sValue)
+	dim sNewValue
+    sNewValue = parseChar(sValue, array(" ", "%"))
+	if len(sNewValue) = 0 then
+		maskPercent = ""
+		setViewState false
+	else
+		on error resume next
+		err.clear
+		maskPercent = formatPercent(sNewValue)
+		if err.number = 13 then
+		    on error goto 0
+			maskPercent = "# INVALID PERCENT ENTERED #"
+			setViewState true
+			exit function
+		end if
+		on error goto 0
+		setViewState false
+	end if
+end function
+
+</script>
+
+</PUBLIC:COMPONENT>

@@ -1,0 +1,103 @@
+/*-------------------------------------*/
+/*    文件名称: menu.css               */
+/*    文件功能: 定义菜单文字样式       */
+/*  最近更新人: 朱向峰                 */
+/*最近更新日期: 2003-05-26             */
+/*-------------------------------------*/
+
+/*--BODY的样式--*/
+<!--
+body {
+    scrollbar-3dlight-color: #000000;
+    scrollbar-arrow-color: #0000cc;
+    scrollbar-base-color: #ffcc00;
+    scrollbar-darkshadow-color: #996600;
+    scrollbar-face-color: #ffcc00;
+    scrollbar-highlight-color: #ffff00;
+    scrollbar-shadow-color: #000000;
+    scrollbar-track-color: #0000cc;
+}
+CURSOR: url('../common/images/bing.ani');
+-->
+BODY{
+	font-size: 12px;
+	COLOR: #000000;
+	background-color: #FFFFFF;
+	scrollbar-face-color: #DEE3E7;
+	scrollbar-highlight-color: #FFFFFF;
+	scrollbar-shadow-color: #DEE3E7;
+	scrollbar-3dlight-color: #D1D7DC;
+	scrollbar-arrow-color:  #006699;
+	scrollbar-track-color: #EFEFEF;
+	scrollbar-darkshadow-color: #98AAB1;
+	CURSOR: url('../common/images/bing.ani');
+}
+
+/*--TABLE的样式--*/
+table{
+	width: 100%;
+	border: 0px;
+	font-size: 12px;
+}
+/*--TD的样式--*/
+td.menu0{
+	text-align: left;
+	font-size: 12px;
+	padding:0px 0px 0px 0px;
+	CURSOR:default;
+}
+
+td.menu1{
+	text-align: left;
+	font-size: 12px;
+	padding:0px 0px 0px 0px;
+	CURSOR:default;
+}
+
+td.menu2{
+	text-align: left;
+	font-size: 12px;
+	padding:0px 0px 0px 0px;
+	CURSOR:default;
+}
+
+td.menu3{
+	text-align: left;
+	font-size: 12px;
+	padding:0px 0px 0px 0px;
+	CURSOR:default;
+}
+
+td.menu4{
+	text-align: left;
+	font-size: 12px;
+	padding:0px 0px 0px 0px;
+	CURSOR:default;
+}
+
+td.menu5{
+	text-align: left;
+	font-size: 12px;
+	padding:0px 0px 0px 0px;
+	CURSOR:default;
+}
+
+td.menu6{
+	text-align: left;
+	font-size: 12px;
+	padding:0px 0px 0px 0px;
+	CURSOR:default;
+}
+
+td.menu7{
+	text-align: left;
+	font-size: 12px;
+	padding:0px 0px 0px 0px;
+	CURSOR:default;
+}
+
+/*--A的样式--*/
+A:link {text-decoration: none;color: black;}
+A:visited {text-decoration: none;color: black;}
+A:active {text-decoration: none;color: red;}
+A:hover {text-decoration: none;color: black;font-weight: bold;}

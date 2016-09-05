@@ -1,0 +1,76 @@
+<PUBLIC:COMPONENT
+    lightWeight = true
+>
+
+<PUBLIC:DEFAULTS
+    contentEditable = false
+    tabStop = true
+/>
+
+<PUBLIC:attach event="ondocumentready" onevent="initCoolMenu()" />
+
+<PUBLIC:property name="menuRoot" value="" />
+<PUBLIC:property name="menuSized" value=false />
+
+<PUBLIC:method   name="sizeMenu" />
+<PUBLIC:method   name="setMenuItem" />
+<PUBLIC:method   name="getMenuItem" />
+
+<script language="VBScript">
+
+' ----------------------------------------------------
+' IEWidgets: CoolMenu
+'                                                     
+' Copyright ©2002 Stedy Software and Systems          
+' Please see http://www.stedy.com for terms of use.   
+' ----------------------------------------------------
+
+option explicit
+
+dim currentMenuItem
+
+sub initCoolMenu()
+	set currentMenuItem = nothing
+	element.nowrap = true
+	element.style.filter = "blendTrans(duration=0.50) progid:DXImageTransform.Microsoft.Shadow(color=#323232, direction=135, strength=3)"
+end sub
+
+sub sizeMenu()
+	dim childItem, elW, oldState, i
+	if menuSized then exit sub
+	elW = element.offsetWidth
+	menuSized = true
+	for each childItem in element.children
+		with childItem
+			if .className = "coolMenuDivider" then
+				.style.width = elW - 3
+			end if
+			if .className = "coolMenuItem" then
+				oldState = .enabled
+				if not oldState then .enabled = true
+				for i = 0 to .children.length - 1
+					with .children(i)
+						if .className = "coolMenuMore" then
+							childItem.style.paddingRight = "0px"
+							.style.paddingLeft = (elW - 2) - (.offsetLeft + .offsetWidth)
+						end if
+					end with
+				next
+				.style.width = elW - 2
+				if not oldState then .enabled = false
+			end if
+		end with
+	next
+end sub
+
+sub setMenuItem(el)
+	set currentMenuItem = el
+end sub
+
+function getMenuItem()
+	set getMenuItem = currentMenuItem
+end function
+
+</script>
+
+</PUBLIC:COMPONENT>

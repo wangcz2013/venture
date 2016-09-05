@@ -1,0 +1,42 @@
+10
+
+dir
+0
+https://pc201602081828:8443/svn/platfrom/project/tkrs_platform/WebRoot/common/images
+https://pc201602081828:8443/svn/platfrom
+add
+
+
+
+
+
+
+
+svn:special svn:externals svn:needs-lock
+
+
+
+
+
+
+
+
+
+
+
+91ccb081-0663-ea4d-a12d-54f38cca0b32
+
+calendar.gif
+file
+
+
+
+add
+
+
+
+
+
+has-props
+has-prop-mods
+

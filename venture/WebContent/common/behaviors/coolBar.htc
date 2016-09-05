@@ -1,0 +1,743 @@
+<PUBLIC:COMPONENT
+    lightWeight = true
+>
+
+<PUBLIC:DEFAULTS
+    contentEditable = false
+    tabStop = true
+/>
+
+<PUBLIC:attach event="ondocumentready" onevent="initCoolBar()" />
+<PUBLIC:attach event="ondetach" onevent="cleanupCoolBar()" />
+
+<PUBLIC:property name="initPosition" />
+<PUBLIC:property name="dockable" />
+<PUBLIC:property name="barCount" />
+<PUBLIC:property name="docked" />
+<PUBLIC:property name="dockedPosition" />
+<PUBLIC:property name="dragState" />
+
+<PUBLIC:event    name="ondock" id="dock" />
+
+<PUBLIC:method   name="refresh" />
+<PUBLIC:method   name="refreshEx" />
+
+
+<script language="VBScript">
+
+' ----------------------------------------------------
+' IEWidgets: CoolBar
+'                                                     
+' Copyright ©2002 Stedy Software and Systems          
+' Please see http://www.stedy.com for terms of use.   
+' ----------------------------------------------------
+
+Option Explicit
+
+const tb_pos_float = 0
+const tb_pos_top = 1
+const tb_pos_bottom = 2
+const tb_pos_left = 4
+const tb_pos_right = 8
+
+const arr_count_top = 0
+const arr_count_bottom = 1
+const arr_count_left = 2
+const arr_count_right = 3
+const arr_count_horizontal = 4
+const arr_count_vertical = 5
+
+dim coolBarCount
+dim coolBarPosition
+dim verticalSnapSize
+dim horizontalSnapSize
+dim verticalDockHeight
+dim horizontalDockWidth
+dim floatHeight
+dim floatWidth
+dim inDrag
+dim dragX
+dim dragY
+dim coolBarHandle
+dim coolBarParent
+dim posBar
+dim inRefreshMode
+dim procRefUp
+dim procRefMove
+dim initRefresh
+dim initSizing
+
+verticalDockHeight = 24
+inDrag = false
+
+sub initCoolBar()
+	element.nowrap = true
+	initRefresh = false
+	initSizing = true
+	set coolBarParent = window.document.body.parentElement
+	set coolBarHandle = coolBarParent.document.getElementById(cstr(id & "handle"))
+	select case ucase(initPosition)
+		case "TOP"
+			coolBarPosition = tb_pos_top
+		case "BOTTOM"
+			coolBarPosition = tb_pos_bottom
+		case "LEFT"
+			coolBarPosition = tb_pos_left
+		case "RIGHT"
+			coolBarPosition = tb_pos_right
+		case "FLOAT"
+			coolBarPosition = tb_pos_float
+		case else
+			coolBarPosition = tb_pos_top
+	end select		
+	if ucase(dockable) = "NO" then coolBarPosition = tb_pos_float
+	horizontalDockWidth = verticalDockHeight + 1
+	verticalSnapSize = verticalDockHeight
+	horizontalSnapSize = horizontalDockWidth
+	floatHeight = verticalDockHeight + 2
+	if dockable = "" then dockable = true
+	dragState = false
+	with window
+		.attachEvent "onload", GetRef("actionOnLoad")
+		.attachEvent "onresize", GetRef("actionSizeElementsOnResize")
+	end with
+	coolBarHandle.attachEvent "onmousedown", GetRef("coolBarOnMouseDown")
+	set procRefUp = GetRef("coolBarOnMouseUp")
+	set procRefMove = GetRef("coolBarOnMouseMove")
+end sub
+
+sub cleanupCoolBar
+	with window
+		.detachEvent "onload", GetRef("actionOnLoad")
+		.detachEvent "onresize", GetRef("actionSizeElementsOnResize")
+	end with
+	coolBarHandle.detachEvent "onmousedown", GetRef("coolBarOnMouseDown")
+	set coolBarParent = nothing
+	set coolBarHandle = nothing
+	if not posBar is nothing then posBar.removeNode true
+	set posBar = nothing
+	set procRefUp = nothing
+	set procRefMove = nothing
+end sub
+
+sub refresh
+	actionSizeElementsOnResize
+end sub
+
+sub refreshEx
+	dim childItem, cL, cW
+	for each childItem in element.children
+		with childItem
+			if style.writingMode = "tb-rl" then
+				if .offsetTop > cL then 
+					cL = .offsetTop
+					cW = getActualHeight(childItem)
+				end if
+			else
+				if .offsetLeft > cL then 
+					cL = .offsetLeft
+					cW = getActualWidth(childItem)
+				end if
+			end if
+		end with
+	next
+	floatWidth = cL + cW
+	actionSizeElements
+end sub
+
+sub actionSizeElementsOnResize
+	dim coolBarCounts(5)
+	getCoolBarPosCounts coolBarCounts
+	setCoolBarPos coolBarCounts, true
+	setCoolBarSize coolBarCounts, true
+	setBodyDivSize coolBarCounts
+	setCoolBarHandle
+end sub
+
+sub actionSizeElements
+	dim coolBarCounts(5)
+	dim prevDocked
+	dim prevDockedPosition
+	dim newDockedPosition
+	prevDocked = docked
+	prevDockedPosition = dockedPosition
+	docked = coolBarPosition
+	getCoolBarPosCounts coolBarCounts
+	setCoolBarBorder
+	setCoolBarPos coolBarCounts, false
+	setCoolBarSize coolBarCounts, false
+	setBodyDivSize coolBarCounts
+	if not initSizing then
+		newDockedPosition = dockedPosition
+		dockedPosition = prevDockedPosition
+		if prevDocked <> tb_pos_float then refreshAdjacentBars(prevDocked)
+		dockedPosition = newDockedPosition
+		setCoolBarPos coolBarCounts, false
+		setCoolBarSize coolBarCounts, false
+	end if
+	setCoolBarHandle
+end sub
+
+sub actionOnLoad
+	dim childItem, cL, cW
+	set posBar = coolBarParent.document.createElement("DIV")
+	coolBarParent.document.body.appendChild(posBar)
+	with posBar
+		.id = id & "posBar"
+		.className = "posBar"
+	end with
+	actionSizeElements
+	for each childItem in element.children
+		with childItem
+			if style.writingMode = "tb-rl" then
+				if .offsetTop > cL then 
+					cL = .offsetTop
+					cW = getActualHeight(childItem)
+				end if
+			else
+				if .offsetLeft > cL then 
+					cL = .offsetLeft
+					cW = getActualWidth(childItem)
+				end if
+			end if
+		end with
+	next
+	floatWidth = cL + cW
+	actionSizeElements
+	initSizing = false
+end sub
+
+sub actionDisplayPosBar(pos)
+	with posBar.style
+		select case pos
+			case tb_pos_top
+					.top = bodyDiv.style.posTop + 1
+					.left = bodyDiv.style.posLeft + 1
+					.height = verticalDockHeight
+					.width = bodyDiv.style.posWidth - 2
+			case tb_pos_bottom
+					.top = bodyDiv.style.posTop + bodyDiv.style.posHeight - verticalDockHeight
+					.left = bodyDiv.style.posLeft + 1
+					.height = verticalDockHeight
+					.width = bodyDiv.style.posWidth - 2
+			case tb_pos_left
+					.top = bodyDiv.style.posTop + 1
+					.left = bodyDiv.style.posLeft + 1
+					.height = bodyDiv.style.posHeight - 2
+					.width = horizontalDockWidth
+			case tb_pos_right
+					.top = bodyDiv.style.posTop + 1
+					.left = bodyDiv.style.posLeft + bodyDiv.style.posWidth - horizontalDockWidth
+					.height = bodyDiv.style.posHeight - 2
+					.width = horizontalDockWidth - 1
+		end select
+		style.visibility = "hidden"
+		.visibility = "visible"
+	end with
+end sub
+
+sub refreshAllBars()
+	dim i
+	for i = 1 to barCount
+		with coolBarParent.document.getElementById(cstr("bar" & i))
+			if (instr(id, cstr(i)) = 0) and (.docked <> tb_pos_float) then
+				.refresh
+			end if
+		end with
+	next
+end sub
+
+sub refreshAdjacentBars(pos)
+	dim i, s, currentDockedPosition
+	if inRefreshMode then exit sub
+	inRefreshMode = true
+	currentDockedPosition = dockedPosition
+	for s = 1 to barCount
+		with coolBarParent.document.getElementById(cstr("bar" & s))
+			if (.docked and pos) and (.dockedPosition > currentDockedPosition) and (.id <> id) then
+				.dockedPosition = .dockedPosition - 1
+				.refresh
+			else
+				.refresh
+			end if	
+		end with
+	next
+	refreshAllBars
+	inRefreshMode = false
+end sub
+
+sub setCoolBarHandle
+	if coolBarHandle is nothing then exit sub
+	select case coolBarPosition
+		case tb_pos_top, tb_pos_bottom
+			with coolBarHandle.style
+				.height = verticalDockHeight - 6
+				.width = 3
+				.margintop = (verticalDockHeight - .posHeight) / 2 - 2
+				.marginbottom = 0
+				.marginleft = 2
+				.marginright = 4
+			end with
+		case tb_pos_left, tb_pos_right
+			with coolBarHandle.style
+				.height = 3
+				.width = horizontalDockWidth - 6
+				.margintop = 3
+				.marginbottom = 4
+				.marginleft = 0
+				.marginright = (horizontalDockWidth - .posWidth) / 2 - 1
+			end with
+		case tb_pos_float
+			with coolBarHandle.style
+				.height = floatHeight - 8
+				.width = 3
+				.margintop = (floatHeight - .posHeight) / 2 - 3
+				.marginbottom = 0
+				.marginleft = 2
+				.marginright = 4
+			end with
+	end select
+end sub
+
+sub setCoolBarBorder
+	select case coolBarPosition
+		case tb_pos_top, tb_pos_bottom, tb_pos_right, tb_pos_left
+			with style
+				.bordertop = "1px solid buttonhighlight"
+				.borderbottom = "1px solid buttonshadow"
+				.borderright = "1px solid buttonshadow"
+				.borderleft = "1px solid buttonhighlight"
+			end with
+		case tb_pos_float
+			with style
+				.border = "2px outset window"
+			end with
+	end select
+end sub
+
+sub setCoolBarPos(coolBarCounts, blnResizing)
+	dim tcount, lcount, i
+	select case coolBarPosition
+		case tb_pos_top
+			with style
+				if not blnResizing then 
+					.top = (coolBarCounts(arr_count_top) - 1) * verticalDockHeight
+					dockedPosition = coolBarCounts(arr_count_top)
+				else
+					.top = (dockedPosition - 1) * verticalDockHeight
+				end if
+				if not blnResizing then 
+					.left = (coolBarCounts(arr_count_left) * horizontalDockWidth)
+				else
+					lcount = 0
+					for i = 1 to barCount
+						with coolBarParent.document.getElementById(cstr("bar" & i))
+							if (.docked and tb_pos_left) then
+								if .style.posTop <= style.posTop + (verticalDockHeight / 2) then lcount = lcount + 1
+							end if
+						end with
+					next
+					.left = (lcount * horizontalDockWidth)
+				end if
+			end with
+		case tb_pos_bottom
+			with style
+				if not blnResizing then 
+					.top = coolBarParent.offsetHeight - (coolBarCounts(arr_count_bottom) * verticalDockHeight)
+					dockedPosition = coolBarCounts(arr_count_bottom)
+				else
+					.top = coolBarParent.offsetHeight - (dockedPosition * verticalDockHeight)
+				end if
+				if not blnResizing then 
+					.left = (coolBarCounts(arr_count_left) * horizontalDockWidth)
+				else
+					lcount = 0
+					for i = 1 to barCount
+						with coolBarParent.document.getElementById(cstr("bar" & i))
+							if (.docked and tb_pos_left) then
+								if .style.posTop + .style.posHeight >= style.posTop + (verticalDockHeight / 2) then lcount = lcount + 1
+							end if
+						end with
+					next
+					.left = (lcount * horizontalDockWidth)
+				end if
+			end with
+		case tb_pos_left
+			with style
+				if not blnResizing then 
+					.top = (coolBarCounts(arr_count_top) * verticalDockHeight)
+				else
+					tcount = 0
+					for i = 1 to barCount
+						with coolBarParent.document.getElementById(cstr("bar" & i))
+							if (.docked and tb_pos_top) then
+								if .style.posLeft <= style.posLeft + (horizontalDockWidth / 2) then tcount = tcount + 1
+							end if
+						end with
+					next
+					.top = (tcount * verticalDockHeight)
+				end if
+				if not blnResizing then 
+					.left = (coolBarCounts(arr_count_left) - 1) * horizontalDockWidth
+					dockedPosition = coolBarCounts(arr_count_left)
+				else
+					.left = (dockedPosition - 1) * horizontalDockWidth
+				end if
+			end with
+		case tb_pos_right
+			with style
+				if not blnResizing then 
+					.top = (coolBarCounts(arr_count_top) * verticalDockHeight)
+				else
+					tcount = 0
+					for i = 1 to barCount
+						with coolBarParent.document.getElementById(cstr("bar" & i))
+							if (.docked and tb_pos_top) then
+								if .style.posLeft + .style.posWidth >= style.posLeft + (horizontalDockWidth / 2) then tcount = tcount + 1
+							end if
+						end with
+					next
+					.top = (tcount * verticalDockHeight)
+				end if
+				if not blnResizing then 
+					.left = coolBarParent.offsetWidth - (coolBarCounts(arr_count_right) * horizontalDockWidth)
+					dockedPosition = coolBarCounts(arr_count_right)
+				else	
+					.left = coolBarParent.offsetWidth - (dockedPosition * horizontalDockWidth)
+				end if
+			end with
+		case tb_pos_float
+			dockedPosition = 0
+	end select
+end sub
+
+sub setCoolBarSize(coolBarCounts, blnResizing)
+	dim tbcount, lrcount, i
+	dim childItem
+	select case coolBarPosition
+		case tb_pos_top
+			with style
+				.height = verticalDockHeight
+				if blnResizing then
+					for i = 1 to barCount
+						with coolBarParent.document.getElementById(cstr("bar" & i))
+							if (.docked and tb_pos_left) or (.docked and tb_pos_right) then
+								if .style.posTop <= style.posTop + (verticalDockHeight / 2) then lrcount = lrcount + 1
+							end if
+						end with
+					next
+					.width = coolBarParent.offsetWidth - (lrcount * horizontalDockWidth)
+				else
+					.width = coolBarParent.offsetWidth - (coolBarCounts(arr_count_vertical) * horizontalDockWidth)
+				end if
+				setChildrenViewMode "lr-tb"
+			end with
+		case tb_pos_bottom
+			with style
+				.height = verticalDockHeight
+				if blnResizing then
+					for i = 1 to barCount
+						with coolBarParent.document.getElementById(cstr("bar" & i))
+							if (.docked and tb_pos_left) or (.docked and tb_pos_right) then
+								if .style.posTop + .style.posHeight >= style.posTop + (verticalDockHeight / 2) then lrcount = lrcount + 1
+							end if
+						end with
+					next
+					.width = coolBarParent.offsetWidth - (lrcount * horizontalDockWidth)
+				else
+					.width = coolBarParent.offsetWidth - (coolBarCounts(arr_count_vertical) * horizontalDockWidth)
+				end if
+				setChildrenViewMode "lr-tb"
+			end with
+		case tb_pos_left
+			with style
+				if blnResizing then
+					for i = 1 to barCount
+						with coolBarParent.document.getElementById(cstr("bar" & i))
+							if (.docked and tb_pos_top) or (.docked and tb_pos_bottom) then
+								if .style.posLeft <= style.posLeft + (horizontalDockWidth / 2) then tbcount = tbcount + 1
+							end if
+						end with
+					next
+					.height = coolBarParent.offsetHeight - (tbcount * verticalDockHeight)
+				else
+					.height = coolBarParent.offsetHeight - (coolBarCounts(arr_count_horizontal) * verticalDockHeight)
+				end if
+				.width = horizontalDockWidth
+				setChildrenViewMode "tb-rl"
+			end with
+		case tb_pos_right
+			with style
+				if blnResizing then
+					for i = 1 to barCount
+						with coolBarParent.document.getElementById(cstr("bar" & i))
+							if (.docked and tb_pos_top) or (.docked and tb_pos_bottom) then
+								if .style.posLeft + .style.posWidth >= style.posLeft + (horizontalDockWidth / 2) then tbcount = tbcount + 1
+							end if
+						end with
+					next
+					.height = coolBarParent.offsetHeight - (tbcount * verticalDockHeight)
+				else
+					.height = coolBarParent.offsetHeight - (coolBarCounts(arr_count_horizontal) * verticalDockHeight)
+				end if
+				.width = horizontalDockWidth
+				setChildrenViewMode "tb-rl"
+			end with
+		case tb_pos_float
+			with style
+				.width = iif(floatWidth < 30, 30, floatWidth)
+				.height = floatHeight
+				setChildrenViewMode "lr-tb"
+			end with
+	end select
+end sub
+
+sub setChildrenViewMode(sMode)
+	dim childItem
+	select case sMode
+		case "lr-tb"
+			with style
+				if .writingMode = "lr-tb" then exit sub
+				.writingMode = "lr-tb"
+				.paddingTop = "1px"
+				for each childItem in element.children
+					with childItem
+						if .className = "coolButtonDividerV" then .className = "coolButtonDividerH"
+						if .className = "coolButton" then
+							.style.width = 0
+							.style.height = verticalDockHeight - 4
+							if .children.length then
+								with childItem.children(0)
+									if .tagName = "IMG" then
+										if .src = "" then
+											.height = 16
+											.width = 0
+										end if
+									end if
+								end with
+							end if
+						end if
+						if .className = "coolMenuRoot" then
+							with .style
+								.paddingTop    = "2px"
+								.paddingLeft   = "7px"
+								.paddingBottom = "3px"
+								.paddingRight  = "7px"
+							end with
+						end if
+						if .className = "coolCombo" then
+							.style.display = "inline"
+						end if
+					end with
+				next
+			end with
+		case "tb-rl"
+			with style
+				if .writingMode = "tb-rl" then exit sub
+				.writingMode = "tb-rl"
+				.paddingTop = "0px"
+				for each childItem in element.children
+					with childItem
+						if .className = "coolButtonDividerH" then .className = "coolButtonDividerV"
+						if .className = "coolButton" then
+							.style.width = horizontalDockWidth - 3
+							.style.height = 0
+							if .children.length then
+								with childItem.children(0)
+									if .tagName = "IMG" then
+										if .src = "" then
+											.height = 2
+											.width = 16
+										end if
+									end if
+								end with
+							end if
+						end if
+						if .className = "coolMenuRoot" then
+							with .style
+								.paddingTop    = "7px"
+								.paddingLeft   = "3px"
+								.paddingBottom = "7px"
+								.paddingRight  = "2px"
+							end with
+						end if
+						if .className = "coolCombo" then
+							.style.display = "none"
+						end if
+					end with
+				next
+			end with
+	end select
+end sub
+
+sub getCoolBarPosCounts(coolBarCounts)
+	dim i
+	dim dockType
+	for i = 1 to barCount
+		dockType = coolBarParent.document.getElementById(cstr("bar" & i)).docked
+		if (dockType and tb_pos_top) then
+			coolBarCounts(arr_count_top) = coolBarCounts(arr_count_top) + 1
+		elseif (dockType and tb_pos_bottom) then
+			coolBarCounts(arr_count_bottom) = coolBarCounts(arr_count_bottom) + 1
+		elseif (dockType and tb_pos_left) then
+			coolBarCounts(arr_count_left) = coolBarCounts(arr_count_left) + 1
+		elseif (dockType and tb_pos_right) then
+			coolBarCounts(arr_count_right) = coolBarCounts(arr_count_right) + 1
+		end if
+	next
+	coolBarCounts(arr_count_horizontal) = coolBarCounts(arr_count_top) + coolBarCounts(arr_count_bottom)
+	coolBarCounts(arr_count_vertical) = coolBarCounts(arr_count_left) + coolBarCounts(arr_count_right)
+end sub
+
+sub setBodyDivSize(coolBarCounts)
+	dim i, iTop, iBottom, iLeft, iRight
+	with bodyDiv.style
+		.top = (coolBarCounts(arr_count_top) * verticalDockHeight) + iif(coolBarCounts(arr_count_top) > 0, 2, 0)
+		.left = (coolBarCounts(arr_count_left) * horizontalDockWidth) + iif(coolBarCounts(arr_count_left) > 0, 1, 0)
+		.height = (coolBarParent.offsetHeight - (coolBarCounts(arr_count_horizontal) * verticalDockHeight)) - iif(coolBarCounts(arr_count_top) > 0, 2, 0) - iif(coolBarCounts(arr_count_bottom) > 0, 2, 0)
+		.width = (coolBarParent.offsetWidth - (coolBarCounts(arr_count_vertical) * horizontalDockWidth)) - iif(coolBarCounts(arr_count_left) > 0, 1, 0) - iif(coolBarCounts(arr_count_right) > 0, 1, 0)
+	end with
+	iTop = bodyDiv.style.posTop
+	iBottom = bodyDiv.style.posTop + bodyDiv.style.posHeight
+	iLeft = bodyDiv.style.posLeft
+	iRight = bodyDiv.style.posLeft + bodyDiv.style.posWidth
+	for i = 1 to barCount
+		with coolBarParent.document.getElementById(cstr("bar" & i))
+			if (.docked = tb_pos_float) then
+				if dockable then
+					if .style.posTop <= iTop then .style.top = iTop + 10
+					if (.style.posTop + .style.posHeight) >= iBottom then .style.top = iBottom - .style.posHeight - 10
+					if .style.posLeft <= iLeft then .style.left = iLeft + 10
+					if (.style.posLeft + .style.posWidth) >= iRight then .style.left = iRight - .style.posWidth - 10
+				else
+					if .style.posTop <= iTop then .style.top = iTop
+					if (.style.posTop + .style.posHeight) >= iBottom then .style.top = iBottom - .style.posHeight
+					if .style.posLeft <= iLeft then .style.left = iLeft
+					if (.style.posLeft + .style.posWidth) >= iRight then .style.left = iRight - .style.posWidth
+				end if
+			end if
+		end with
+	next
+end sub
+
+sub setCoolBarzIndex()
+	dim i
+	for i = 1 to barCount
+		coolBarParent.document.getElementById(cstr("bar" & i)).style.zIndex = 0
+	next
+end sub
+
+sub coolBarOnMouseDown
+	with window.event
+		dragState = true
+		inDrag = true
+		dragX = .clientX - style.pixelLeft
+		dragY = .clientY - style.pixelTop
+		setCoolBarzIndex
+		style.zIndex = 50
+		.returnValue = false
+		.cancelBubble = true
+	end with
+	element.setCapture
+	with window.document
+		.attachEvent "onmouseup", procRefUp
+		.attachEvent "onmousemove", procRefMove
+	end with
+end sub
+
+sub coolBarOnMouseUp
+	inDrag = false
+	dragState = false
+	posBar.style.visibility = "hidden"
+	if coolBarPosition <> docked then actionSizeElements
+	style.visibility = "visible"
+	dock.fire
+	with window.document
+		.detachEvent "onmouseup", procRefUp
+		.detachEvent "onmousemove", procRefMove
+	end with
+	element.releaseCapture
+	style.zIndex = 1
+end sub
+
+sub coolBarOnMouseMove
+	with window.event
+		if inDrag and not inRefreshMode then
+			dim coolBarCounts(5)
+			getCoolBarPosCounts coolBarCounts
+			if ucase(dockable) = "NO" or not dockable then
+				style.left = .clientX - dragX
+				style.top = .clientY - dragY
+				coolBarPosition = tb_pos_float
+				actionSizeElements
+			else
+				if (.clientY <= (verticalSnapSize * (coolBarCounts(arr_count_top) + 1)) and not (docked and tb_pos_left) and not (docked and tb_pos_right)) then
+					if dockable then actionDisplayPosBar tb_pos_top
+					coolBarPosition = tb_pos_top
+				elseif (.clientY >= (coolBarParent.offsetHeight - (verticalSnapSize * (coolBarCounts(arr_count_bottom) + 1))) and not (docked and tb_pos_left) and not (docked and tb_pos_right)) then
+					if dockable then actionDisplayPosBar tb_pos_bottom
+					coolBarPosition = tb_pos_bottom
+				elseif (.clientX <= (horizontalSnapSize * (coolBarCounts(arr_count_left) + 1)) and not (docked and tb_pos_top) and not (docked and tb_pos_bottom)) then
+					if dockable then actionDisplayPosBar tb_pos_left
+					coolBarPosition = tb_pos_left
+				elseif (.clientX >= (coolBarParent.offsetWidth - (horizontalSnapSize * (coolBarCounts(arr_count_right) + 1))) and not (docked and tb_pos_top) and not (docked and tb_pos_bottom)) then
+					if dockable then actionDisplayPosBar tb_pos_right
+					coolBarPosition = tb_pos_right
+				else
+					posBar.style.visibility = "hidden"
+					style.visibility = "visible"
+					style.left = .clientX - dragX
+					style.top = .clientY - dragY
+					coolBarPosition = tb_pos_float
+					actionSizeElements
+				end if
+			end if
+			.returnValue = false
+			.cancelBubble = true
+		end if
+	end with
+end sub
+
+function getActualHeight(el)
+	dim bHeight
+	dim pHeight
+	dim mHeight
+	dim oHeight
+	oHeight = el.offsetHeight
+	with el.currentStyle
+		if instr(.borderBottomWidth, "px") <> 0 then bHeight = bHeight + iif(.borderBottomWidth <> "", left(.borderBottomWidth, len(.borderBottomWidth) - 2), 0)
+		if instr(.paddingBottom, "px") <> 0 then pHeight = pHeight + iif(.paddingBottom <> "", left(.paddingBottom, len(.paddingBottom) - 2), 0)
+		if instr(.marginBottom, "px") <> 0 then mHeight = mHeight  + iif(.marginBottom <> "", left(.marginBottom, len(.marginBottom) - 2), 0)
+	end with
+	getActualHeight = oHeight + bHeight + pHeight + mHeight + 4
+end function
+
+function getActualWidth(el)
+	dim bWidth
+	dim pWidth
+	dim mWidth
+	dim oWidth
+	oWidth = el.offsetWidth
+	with el.currentStyle
+		if instr(.borderRightWidth, "px") <> 0 then bWidth = bWidth + iif(.borderRightWidth <> "", left(.borderRightWidth, len(.borderRightWidth) - 2), 0)
+		if instr(.paddingRight, "px") <> 0 then pWidth = pWidth + iif(.paddingRight <> "", left(.paddingRight, len(.paddingRight) - 2), 0)
+		if instr(.marginRight, "px") <> 0 then mWidth = mWidth  + iif(.marginRight <> "", left(.marginRight, len(.marginRight) - 2), 0)
+	end with
+	getActualWidth = oWidth + bWidth + pWidth + mWidth + 4
+end function
+
+function iif(blnTest, expr1, expr2)
+	if isNull(blnTest) then
+		iif = expr2
+	else
+		if CBool(blnTest) then
+			iif = expr1
+		else
+			iif = expr2
+		end if
+	end if
+end function
+
+</script>
+
+</PUBLIC:COMPONENT>

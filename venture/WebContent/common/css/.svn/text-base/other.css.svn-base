@@ -1,0 +1,28 @@
+/*------------------------------------------------------------------*/
+/*    文件名称: other.css                                           */
+/*    文件功能: 定义menutop.jsp,quick.jsp,menu.jsp,station.jsp      */
+/*  最近更新人: Xx                                              */
+/*最近更新日期: 2005-05-22                                          */
+/*------------------------------------------------------------------*/
+
+body {
+font: tahoma,verdana,arial,helvetica,sans-serif;
+font-size: 12px; margin-top:0px;
+SCROLLBAR-FACE-COLOR: #D7E1F6; SCROLLBAR-HIGHLIGHT-COLOR: #F7F7F7; 
+SCROLLBAR-SHADOW-COLOR: #799AE1; SCROLLBAR-DARKSHADOW-COLOR: #799AE1; 
+SCROLLBAR-3DLIGHT-COLOR: #F7F7F7; SCROLLBAR-ARROW-COLOR: #FFFFFF;
+SCROLLBAR-TRACK-COLOR: #F7F7F7;
+}
+TD {
+	FONT-SIZE: 12px
+}
+TH {
+	FONT-WEIGHT: bold; FONT-SIZE: 12px; BACKGROUND-IMAGE: url(../images/bg_h.gif); COLOR: white; BACKGROUND-COLOR: #4455aa
+}
+
+input{font-size: 10pt}
+input.common2{background-color: #F7F7F7;border: 1px #799AE1 solid;height: 20px}
+input.code2{background-color: #D7E1F6;border: 1px #799AE1 solid;height: 20px}
+.table {
+border: 1px solid #799AE1;
+}

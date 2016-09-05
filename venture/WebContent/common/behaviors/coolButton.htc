@@ -1,0 +1,554 @@
+<PUBLIC:COMPONENT
+    lightWeight = true
+>
+
+<PUBLIC:DEFAULTS
+    contentEditable = false
+    tabStop = true
+/>
+
+<PUBLIC:attach event="ondocumentready" onevent="initCoolButton()" />
+<PUBLIC:attach event="onmousedown" onevent="coolButtonOnMouseDown()" />
+<PUBLIC:attach event="onmouseup" onevent="coolButtonOnMouseUp()" />
+<PUBLIC:attach event="onmouseout" onevent="coolButtonOnMouseOut()" />
+<PUBLIC:attach event="onmouseover" onevent="coolButtonOnMouseOver()" />
+<PUBLIC:attach event="onpropertychange" onevent="coolButtonPropertyChange()" />
+<PUBLIC:attach event="ondetach" onevent="cleanupCoolButton()" />
+
+<PUBLIC:property name="buttonType" value="" />
+<PUBLIC:property name="value" value=false />
+<PUBLIC:property name="enabled" value=true />
+<PUBLIC:property name="partner" value="" />
+<PUBLIC:property name="menu" value="" />
+<PUBLIC:property name="menuState" value=false />
+<PUBLIC:property name="menuVisible" value=false />
+<PUBLIC:property name="partnerMenuState" value=false />
+
+<PUBLIC:method   name="showButtonMenuEx" />
+<PUBLIC:method   name="hideButtonMenuEx" />
+<PUBLIC:method   name="hideButtonMenuExb" />
+
+<script language="VBScript">
+
+' ----------------------------------------------------
+' IEWidgets: CoolButton
+'                                                     
+' Copyright ©2002 Stedy Software and Systems          
+' Please see http://www.stedy.com for terms of use.   
+' ----------------------------------------------------
+
+option explicit
+
+dim coolButtonParent
+dim coolButtonParentDoc
+dim drawState
+dim onClickHolder
+dim backgroundImageUrl
+dim internalSettingProperties
+dim procRef
+
+sub initCoolButton()
+	
+	set procRef = GetRef("hideButtonMenuDocEx")
+	set coolButtonParent = window.document.body.parentElement
+	set coolButtonParentDoc = coolButtonParent.document
+	
+	backgroundImageUrl = element.currentStyle.coolButtonSelectedBackgroundUrl
+	
+	buttonType = ucase(buttonType)
+	
+	with window
+		.attachEvent "onload", GetRef("actionOnLoad")
+	end with
+	
+	select case buttonType
+		case "MORE"
+			with style
+				.fontFamily = "webdings"
+				.fontSize = "6pt"
+			end with
+		case "STATE"
+			if value then
+				showPressed(style)
+			end if
+	end select
+	
+	if not enabled then showDisabled
+	
+end sub
+
+sub cleanupCoolButton
+	
+	with window
+		.detachEvent "onload", GetRef("actionOnLoad")
+	end with
+	
+	set coolButtonParentDoc = nothing
+	set coolButtonParent = nothing
+	set procRef = nothing
+
+end sub
+
+sub actionOnLoad
+	dim childItem, prevEnabled
+	dim imgElement
+	
+	prevEnabled = enabled
+	enabled = true
+
+	for each childItem in element.children
+		if ucase(childItem.tagName) = "IMG" then
+			enabled = prevEnabled
+			exit sub
+		end if
+	next
+	
+	if element.buttonType <> "MORE" then
+		if instr(element.parentElement.id, "bar") <> 0 then 
+			set imgElement = document.createElement("IMG")
+			select case ucase(element.parentElement.initPosition)
+				case "FLOAT", "TOP", "BOTTOM"
+					with imgElement
+						.width = 1
+						.height = 16
+					end with
+				case "LEFT", "RIGHT"
+					with imgElement
+						.width = 16
+						.height = 1
+					end with
+				case else
+					with imgElement
+						.width = 1
+						.height = 16
+					end with
+			end select
+			element.insertAdjacentElement "afterBegin", imgElement
+			set imgElement = nothing
+		end if
+	end if
+
+	enabled = prevEnabled
+
+end sub
+
+sub coolButtonOnMouseDown
+	dim elMenu, elPartner, elMore
+
+	'if button.enabled = false then no drawing activity
+	if not enabled then exit sub
+	
+	'draw button state
+	showPressed style
+	
+	'toggle the button value (0=not pressed, 1=pressed)
+	toggleInternalValue
+	
+	'if this is a 'MORE' button, we need to display the menu...
+	if (buttonType = "MORE") then 
+		with coolButtonParentDoc
+			set elMenu = .getElementById(cstr(menu))
+			set elPartner = .getElementById(cstr(partner))
+		end with
+		showButtonMenu elMenu, elPartner, element
+		set elMenu = nothing
+		set elPartner = nothing
+	end if 
+end sub
+
+sub coolButtonOnMouseUp
+	dim elMenu, elPartner, elMore
+	
+	'if button.enabled = false then no drawing activity
+	if not enabled then exit sub
+	
+	select case buttonType
+		case "STATE"
+			if value then 
+				checkButtonandMenuStates true
+				exit sub
+			end if
+		case "MORE"
+			if value then
+				exit sub
+			else
+				with coolButtonParentDoc
+					set elMenu = .getElementById(cstr(menu))
+					set elPartner = .getElementById(cstr(partner))
+				end with
+				hideButtonMenu elMenu, elPartner, element
+				set elMenu = nothing
+				set elPartner = nothing
+			end if
+		case else
+			if partnerMenuState then
+				with coolButtonParentDoc
+					set elMore = .getElementById(cstr(partner))
+				end with
+				elMore.hideButtonMenuEx
+				showRaised elMore.style
+				set elMore = nothing
+			else
+				checkButtonandMenuStates true
+			end if
+	end select
+	
+	'draw button state
+	showRaised style
+	
+end sub
+
+sub coolButtonOnMouseOut
+	'if button.enabled = false then no drawing activity
+	if not enabled then exit sub
+
+	'if my partner is showing its menu, don't draw this state
+	if partnerMenuState then exit sub
+	
+	'if state button value=1 then change its background and don't draw this state
+	if buttonType = "STATE" and value then 
+		style.backgroundImage = backgroundImageUrl
+		exit sub
+	end if
+	
+	'if I am showing my menu, don't draw this state
+	if (buttonType = "MORE" and value) then exit sub
+	
+	'draw button state, and partner (if I have one)
+	showNormal style
+	if hasPartner(element) then showNormal coolButtonParentDoc.getElementById(cstr(partner)).style
+
+end sub
+
+sub coolButtonOnMouseOver
+	dim elMenu, elPartner, elMore
+
+	'if button.enabled = false then no drawing activity
+	if not enabled then exit sub
+
+	select case buttonType
+		case "STATE"
+			if value then 
+				style.backgroundImage = ""
+				exit sub
+			end if
+		case "MORE"
+			if menuState then
+				if value then exit sub
+				
+				with coolButtonParentDoc
+					set elMenu = .getElementById(cstr(menu))
+					set elPartner = .getElementById(cstr(partner))
+				end with
+				
+				'show prev button(s) state
+				showPressed style
+				if partner <> "" then showRaised elPartner.style
+				
+				'set value back to true
+				setInternalValue true
+				
+				're-show the menu
+				showButtonMenu elMenu, elPartner, element
+				
+				set elMenu = nothing
+				set elPartner = nothing
+				
+				exit sub
+			end if
+		case else
+			if partnerMenuState then
+				set elMore = coolButtonParentDoc.getElementById(cstr(partner))
+
+				'show prev button(s) state
+				showRaised style
+				showPressed elMore.style
+				
+				'set partner value back to true
+				elMore.value = true
+				
+				're-show the menu
+				elMore.showButtonMenuEx
+				
+				set elMore = nothing
+
+				exit sub
+			else
+				checkButtonandMenuStates false
+			end if
+	end select	
+	
+	'draw button state, and partner (if I have one)
+	showRaised style
+	if hasPartner(element) then showRaised coolButtonParentDoc.getElementById(cstr(partner)).style
+
+end sub
+
+sub checkButtonandMenuStates(setMenuState)
+	dim childItem
+	for each childItem in element.parentElement.children
+		with childItem
+			if .className = "coolButton" then
+				if .buttonType = "MORE" and .menuState and (.menuVisible or (not .menuVisible and setMenuState)) then
+					.hideButtonMenuExb setMenuState
+				end if
+			end if
+			if .className = "coolCombo" then
+				if .dropdownState then
+					.hideDropdownEx
+				end if
+			end if
+		end with
+	next
+end sub
+
+sub showRaised(elStyle)
+	with elStyle
+		.borderLeft   = "1px solid buttonhighlight"
+		.borderRight  = "1px solid buttonshadow"
+		.borderTop    = "1px solid buttonhighlight"
+		.borderBottom = "1px solid buttonshadow"
+		.paddingTop    = "0px"
+		.paddingLeft   = "1px"
+		.paddingBottom = "2px"
+		.paddingRight  = "1px"
+		if buttonType = "STATE" then .backgroundImage = ""
+	end with
+end sub
+
+sub showPressed(elStyle)
+	with elStyle
+		.borderLeft   = "1px solid buttonshadow"
+		.borderRight  = "1px solid buttonhighlight"
+		.borderTop    = "1px solid buttonshadow"
+		.borderBottom = "1px solid buttonhighlight"
+		.paddingTop    = "1px"
+		.paddingLeft   = "2px"
+		.paddingBottom = "1px"
+		.paddingRight  = "0px"
+		if buttonType = "STATE" then .backgroundImage = backgroundImageUrl
+	end with
+end sub
+
+sub showNormal(elStyle)
+	with elStyle
+		.border = "1px solid buttonface"
+		.paddingTop    = "0px"
+		.paddingLeft   = "1px"
+		.paddingBottom = "2px"
+		.paddingRight  = "1px"
+		if buttonType = "STATE" then .backgroundImage = ""
+	end with
+end sub
+
+sub showDisabled
+	if drawState <> "DISABLED" then
+		if isobject(element.onclick) then
+			set onClickHolder = element.onclick
+			element.onclick = nothing
+		end if
+		style.backgroundImage = ""
+		style.cursor = "default"
+		drawState = "DISABLED"
+		innerHTML =	"<span class='coolDisabled'><span class='coolDisabled'>" & innerHTML & "</span></span>"
+	end if
+end sub
+
+sub showEnabled
+	if drawState = "DISABLED" then
+		if isobject(onClickHolder) then
+			set element.onclick = onClickHolder
+			set onClickHolder = nothing
+		end if
+		if (buttonType = "STATE" and value) then style.backgroundImage = backgroundImageUrl
+		style.cursor = "hand"
+		drawState = "ENABLED"
+		innerHTML = children(0).children(0).innerHTML
+	end if
+end sub
+
+sub showButtonMenu(elMenu, elPartner, elMore)
+	dim elPartnerParent
+	set elPartnerParent = elPartner.parentElement
+	elPartner.partnerMenuState = true
+	with elMenu
+		if not .menuSized then .sizeMenu
+		if instr(elPartnerParent.id, "bar") <> 0 then
+			select case elPartnerParent.docked
+				case 0 'float
+					.style.left = elPartnerParent.offsetLeft + elPartner.offsetLeft + 2
+					.style.top = elPartnerParent.offsetTop + elPartner.offsetTop + elPartner.offsetHeight + 2
+				case 1 'top
+					.style.left = elPartnerParent.offsetLeft + elPartner.offsetLeft + 1
+					.style.top = elPartnerParent.offsetTop + elPartner.offsetTop + elPartner.offsetHeight + 1
+				case 2 'bottom
+					.style.left = elPartnerParent.offsetLeft + elPartner.offsetLeft + 1
+					.style.top = (elPartnerParent.offsetTop + elPartner.offsetTop) - .offsetHeight + 3
+				case 4 'left
+					.style.left = elPartnerParent.offsetLeft + elPartner.offsetLeft + elPartner.offsetWidth + 2
+					.style.top = elPartnerParent.offsetTop + elPartner.offsetTop + 1
+				case 8 'right
+					.style.left = elPartnerParent.offsetLeft + elPartner.offsetLeft - .offsetWidth + 3
+					.style.top = elPartnerParent.offsetTop + elPartner.offsetTop + 1
+			end select
+		else
+			.style.left = elPartner.offsetLeft
+			.style.top = elPartner.offsetTop + elPartner.offsetHeight + 1
+		end if
+		.style.zIndex = 50
+		.filters.blendTrans.apply()
+		.style.visibility = "visible"
+		.filters.blendTrans.play()
+	end with
+	with elMore
+		.menuState = true
+		.menuVisible = true
+	end with
+	window.document.attachEvent "onmousedown", procRef
+	set elPartnerParent = nothing
+end sub
+
+sub showButtonMenuEx
+	dim elMenu, elPartner
+	with coolButtonParentDoc
+		set elMenu = .getElementById(cstr(menu))
+		set elPartner = .getElementById(cstr(partner))
+	end with
+	if not elMenu.menuSized then elMenu.sizeMenu
+	showButtonMenu elMenu, elPartner, element
+	set elMenu = nothing
+	set elPartner = nothing
+end sub
+
+sub hideButtonMenu(elMenu, elPartner, elMore)
+	if menuState = false then exit sub
+	elMenu.style.visibility = "hidden"
+	elPartner.partnerMenuState = false
+	elMore.menuVisible = false
+	elMore.menuState = false
+	setInternalValue false
+	window.document.detachEvent "onmousedown", procRef
+end sub
+
+sub hideButtonMenuEx
+	if not menuState then exit sub
+	dim elMenu, elPartner
+	with coolButtonParentDoc
+		set elMenu = .getElementById(cstr(menu))
+		set elPartner = .getElementById(cstr(partner))
+	end with
+	hideButtonMenu elMenu, elPartner, element
+	showNormal style
+	showNormal elPartner.style
+	set elMenu = nothing
+	set elPartner = nothing
+	with window.event
+		.cancelBubble = true
+		.returnValue = false
+	end with
+end sub
+
+sub hideButtonMenuExb(bMenuState)
+	if not menuVisible and not bMenuState then exit sub
+	dim elMenu, elPartner
+	with coolButtonParentDoc
+		set elMenu = .getElementById(cstr(menu))
+		set elPartner = .getElementById(cstr(partner))
+	end with
+	elMenu.style.visibility = "hidden"
+	elPartner.value = false
+	setInternalValue false
+	menuVisible = false
+	showNormal style
+	if bMenuState then 
+		elPartner.partnerMenuState = false
+		menuState = false
+	end if
+	set elMenu = nothing
+	set elPartner = nothing
+end sub
+
+sub hideButtonMenuDocEx
+	if not menuState then exit sub
+	dim ev, el
+	set ev = window.event
+	set el = ev.srcElement
+	if (el.tagName = "IMG") then
+		set el = el.parentElement
+	end if
+	if (el.className = "coolMenuMore") then
+		set el = el.parentElement
+	end if
+	if el.className <> "coolButton" then
+		if el.className = "coolMenuItem" then
+			if el.subMenu <> "" then 
+				with ev
+					.cancelBubble = true
+					.returnValue = false
+				end with
+				set ev = nothing
+				set el = nothing
+				exit sub
+			end if
+		end if
+		dim elMenu, elPartner
+		with coolButtonParentDoc
+			set elMenu = .getElementById(cstr(menu))
+			set elPartner = .getElementById(cstr(partner))
+		end with
+		hideButtonMenu elMenu, elPartner, element
+		showNormal style
+		showNormal elPartner.style
+		set elMenu = nothing
+		set elPartner = nothing
+		with ev
+			.cancelBubble = true
+			.returnValue = false
+		end with
+	end if
+	set ev = nothing
+	set el = nothing
+end sub
+
+sub setInternalValue(b)
+	internalSettingProperties = true
+	element.value = b
+	internalSettingProperties = false
+end sub
+
+sub toggleInternalValue
+	internalSettingProperties = true
+	element.value = (not element.value)
+	internalSettingProperties = false
+end sub
+
+function hasPartner(el)
+	hasPartner = (trim(el.partner) <> "")
+end function
+
+sub coolButtonPropertyChange
+	if internalSettingProperties then exit sub
+	if window.event.propertyName = "enabled" then
+		if not enabled then
+			showDisabled
+		else
+			showEnabled
+		end if
+	elseif window.event.propertyName = "value" then
+		if drawState <> "DISABLED" then
+			if value then
+				showPressed(style)
+			else
+				showNormal(style)
+			end if
+		else
+			internalSettingProperties = true
+			value = not value
+			internalSettingProperties = false
+		end if
+	end if
+end sub
+
+</script>
+
+</PUBLIC:COMPONENT>

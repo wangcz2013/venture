@@ -1,0 +1,339 @@
+<PUBLIC:COMPONENT
+    lightWeight = true
+>
+
+<PUBLIC:DEFAULTS
+    contentEditable = false
+    tabStop = true
+/>
+
+<PUBLIC:attach event="ondocumentready" onevent="initCoolMenuRoot()" />
+<PUBLIC:attach event="onmousedown" onevent="coolMenuRootOnMouseDown()" />
+<PUBLIC:attach event="onmouseup" onevent="coolMenuRootOnMouseUp()" />
+<PUBLIC:attach event="onmouseout" onevent="coolMenuRootOnMouseOut()" />
+<PUBLIC:attach event="onmouseover" onevent="coolMenuRootOnMouseOver()" />
+<PUBLIC:attach event="onpropertychange" onevent="coolMenuRootPropertyChange()" />
+<PUBLIC:attach event="ondetach" onevent="cleanupCoolMenuRoot()" />
+
+<PUBLIC:property name="enabled" value=true />
+<PUBLIC:property name="menu" value="" />
+<PUBLIC:property name="menuState" value=false />
+<PUBLIC:property name="toggleValue" value=false />
+
+<PUBLIC:method   name="hideMenu" />
+<PUBLIC:method   name="addSubMenu" />
+<PUBLIC:method   name="removeSubMenu" />
+
+<script language="VBScript">
+
+' ----------------------------------------------------
+' IEWidgets: CoolMenuRoot
+'                                                     
+' Copyright ©2002 Stedy Software and Systems          
+' Please see http://www.stedy.com for terms of use.   
+' ----------------------------------------------------
+
+option explicit
+
+dim onClickHolder
+dim drawState
+dim procRef
+dim subMenuCollection
+
+sub initCoolMenuRoot()
+	set subMenuCollection = CreateObject("Scripting.Dictionary")
+	set procRef = GetRef("hideMenuEx")
+	if not enabled then showDisabled
+end sub
+
+sub cleanupCoolMenuRoot
+	set procRef = nothing
+	set subMenuCollection = nothing
+end sub
+
+sub coolMenuRootOnMouseDown
+	if not enabled then exit sub
+	showPressed style
+	if not toggleValue then
+		showMenu element, window.document.getElementById(cstr(element.menu)), true
+	end if
+end sub
+
+sub coolMenuRootOnMouseUp
+	if not enabled then exit sub
+	if toggleValue then
+		hideMenu element, window.document.getElementById(cstr(element.menu))
+		showRaised style
+	end if
+	toggleValue = not toggleValue
+end sub
+
+sub coolMenuRootOnMouseOut
+	if not enabled then exit sub
+	if not toggleValue then showNormal style
+end sub
+
+sub coolMenuRootOnMouseOver
+	if not enabled then exit sub
+	if checkMenuStates then
+		showPressed style
+		showMenu element, window.document.getElementById(cstr(element.menu)), false
+		toggleValue = true
+		exit sub
+	end if
+	if not toggleValue then showRaised style
+end sub
+
+sub showRaised(elStyle)
+	with elStyle
+		.borderLeft   = "1px solid buttonhighlight"
+		.borderRight  = "1px solid buttonshadow"
+		.borderTop    = "1px solid buttonhighlight"
+		.borderBottom = "1px solid buttonshadow"
+		select case parentElement.docked
+			case 0, 1, 2 'float, top, bottom
+				.paddingTop    = "2px"
+				.paddingLeft   = "7px"
+				.paddingBottom = "3px"
+				.paddingRight  = "7px"
+			case 4, 8 'left, right
+				.paddingTop    = "7px"
+				.paddingLeft   = "3px"
+				.paddingBottom = "7px"
+				.paddingRight  = "2px"
+		end select
+	end with
+end sub
+
+sub showPressed(elStyle)
+	with elStyle
+		.borderLeft   = "1px solid buttonshadow"
+		.borderRight  = "1px solid buttonhighlight"
+		.borderTop    = "1px solid buttonshadow"
+		.borderBottom = "1px solid buttonhighlight"
+		select case parentElement.docked
+			case 0, 1, 2 'float, top, bottom
+				.paddingTop    = "3px"
+				.paddingLeft   = "8px"
+				.paddingBottom = "2px"
+				.paddingRight  = "6px"
+			case 4, 8 'left, right
+				.paddingTop    = "8px"
+				.paddingLeft   = "4px"
+				.paddingBottom = "6px"
+				.paddingRight  = "1px"
+		end select
+	end with
+end sub
+
+sub showNormal(elStyle)
+	with elStyle
+		.border = "1px solid buttonface"
+		select case parentElement.docked
+			case 0, 1, 2 'float, top, bottom
+				.paddingTop    = "2px"
+				.paddingLeft   = "7px"
+				.paddingBottom = "3px"
+				.paddingRight  = "7px"
+			case 4, 8 'left, right
+				.paddingTop    = "7px"
+				.paddingLeft   = "3px"
+				.paddingBottom = "7px"
+				.paddingRight  = "2px"
+		end select
+	end with
+end sub
+
+sub showDisabled
+	if drawState <> "DISABLED" then
+		if isobject(element.onclick) then
+			set onClickHolder = element.onclick
+			element.onclick = nothing
+		end if
+		style.cursor = "default"
+		drawState = "DISABLED"
+		innerHTML =	"<span class='coolDisabled'><span class='coolDisabled'>" & innerHTML & "</span></span>"
+	end if
+end sub
+
+sub showEnabled
+	if drawState = "DISABLED" then
+		if isobject(onClickHolder) then
+			set element.onclick = onClickHolder
+			set onClickHolder = nothing
+		end if
+		style.cursor = "hand"
+		drawState = "ENABLED"
+		innerHTML = children(0).children(0).innerHTML
+	end if
+end sub
+
+sub coolMenuRootPropertyChange
+	if window.event.propertyName = "enabled" then
+		if not enabled then
+			showDisabled
+		else
+			showEnabled
+		end if
+	end if
+end sub
+
+function checkMenuStates
+	dim childItem
+	checkMenuStates = false
+	for each childItem in element.parentElement.children
+		if (not childItem is element) then
+			with childItem
+				if .className = "coolMenuRoot" then
+					if .menuState then
+						.hideMenu childItem, window.document.getElementById(cstr(.menu))
+						showNormal .style
+						.toggleValue = false
+						checkMenuStates = true
+						exit for
+					end if
+				end if
+			end with
+		end if
+	next
+end function
+
+sub addSubMenu(strName, objUnknown)
+	with subMenuCollection
+		if not .Exists(strName) then
+			.Add strName, strName
+			set .Item(strName) = objUnknown
+		end if
+	end with
+end sub
+
+sub removeSubMenu(strName)
+	dim col, i, elSubMenu
+	with subMenuCollection
+		if .Exists(strName) then
+			col = .Keys
+			for i = .count - 1 to 0 step -1
+				if .Exists(col(i)) then
+					set elSubMenu = .Item(col(i))
+					.Remove col(i)
+					elSubMenu.hideMenu elSubMenu, window.document.getElementById(cstr(col(i)))
+					set elSubMenu = nothing
+				end if
+				if strName = col(i) then exit for
+			next
+		end if
+	end with
+end sub
+
+sub showMenu(elMenuRoot, elMenu, blnFade)
+	dim pX, pY, mrX, mrY, mrH, mrW, d, pID
+	if elMenu is nothing then exit sub
+	with elMenuRoot		
+		.menuState = true
+		mrX = .offsetLeft
+		mrY = .offsetTop
+		mrH = .offsetHeight
+		mrW = .offsetWidth
+		with .parentElement
+			pID = .id
+			d = .docked
+			pX = .offsetLeft
+			pY = .offsetTop
+		end with
+	end with
+	with elMenu
+		if not .menuSized then .sizeMenu
+		.style.zIndex = 50
+		if instr(pID, "bar") <> 0 then
+			select case d
+				case 0 'float
+					with .style
+						.left = pX + mrX + 2
+						.top = pY + mrY + mrH + 3
+					end with
+				case 1 'top
+					with .style
+						.left = pX + mrX + 1
+						.top = pY + mrY + mrH + 2
+					end with
+				case 2 'bottom
+					with .style
+						.left = pX + mrX + 1
+						.top = (pY + mrY) - elMenu.offsetHeight + 3
+					end with
+				case 4 'left
+					with .style
+						.left = pX + mrX + mrW + 4
+						.top = pY + mrY + 1
+					end with
+				case 8 'right
+					with .style
+						.left = pX + mrX - elMenu.offsetWidth + 4
+						.top = pY + mrY + 1
+					end with
+			end select
+		else
+			with .style
+				.left = mrX
+				.top = mrY + mrH + 1
+			end with
+		end if
+		window.document.attachEvent "onclick", procRef
+		.menuRoot = element.id
+		if blnFade then	.filters.blendTrans.apply()
+		.style.visibility = "visible"
+		if blnFade then	.filters.blendTrans.play()
+	end with
+end sub
+
+sub hideMenu(elMenuRoot, elMenu)
+	if menuState = false then exit sub
+	if elMenu is nothing then exit sub
+	elMenu.style.visibility = "hidden"
+	elMenuRoot.menuState = false
+	window.document.detachEvent "onclick", procRef
+	dim subMenu, elSubMenu
+	for each subMenu in subMenuCollection
+		set elSubMenu = subMenuCollection.Item(subMenu)
+		elSubMenu.hideMenu elSubMenu, window.document.getElementById(cstr(subMenu))
+		set elSubMenu = nothing
+	next
+	subMenuCollection.RemoveAll
+end sub
+
+sub hideMenuEx
+	if menuState = false then exit sub
+	dim el
+	set el = window.event.srcElement
+	if (el.tagName = "IMG") then
+		set el = el.parentElement
+	end if
+	if (el.className = "coolMenuMore") then
+		set el = el.parentElement
+	end if
+	if el.className <> "coolMenuRoot" then
+		if el.className = "coolMenuItem" then
+			if el.subMenu <> "" then 
+				with window.event
+					.cancelBubble = true
+					.returnValue = false
+				end with
+				exit sub
+			end if
+		end if
+		dim elMenu
+		set elMenu = window.document.getElementById(cstr(element.menu))
+		hideMenu element, elMenu
+		showNormal element.style
+		toggleValue = false
+		set elMenu = nothing
+		with window.event
+			.cancelBubble = true
+			.returnValue = false
+		end with
+	end if
+end sub
+
+</script>
+
+</PUBLIC:COMPONENT>

@@ -1,0 +1,200 @@
+<PUBLIC:COMPONENT
+    lightWeight = true
+>
+
+<PUBLIC:DEFAULTS
+    contentEditable = false
+    tabStop = true
+/>
+
+<PUBLIC:attach event="ondocumentready" onevent="initCoolMenuItem()" />
+<PUBLIC:attach event="onmouseover" onevent="coolMenuItemOnMouseOver()" />
+<PUBLIC:attach event="onmouseout" onevent="coolMenuItemOnMouseOut()" />
+<PUBLIC:attach event="onpropertychange" onevent="coolMenuItemPropertyChange()" />
+
+<PUBLIC:property name="enabled" value=true />
+<PUBLIC:property name="subMenu" value="" />
+<PUBLIC:property name="subMenuState" value=false />
+
+<PUBLIC:method   name="hideMenu" />
+
+<script language="VBScript">
+
+' ----------------------------------------------------
+' IEWidgets: CoolMenuItem
+'                                                     
+' Copyright ©2002 Stedy Software and Systems          
+' Please see http://www.stedy.com for terms of use.   
+' ----------------------------------------------------
+
+option explicit
+
+dim fo_shadows
+dim onClickHolder
+dim drawState
+dim dispCounter
+dim dispTimer
+dim dispEl
+dim dispFade
+
+sub initCoolMenuItem()
+	element.nowrap = true
+	if not enabled then showDisabled
+end sub
+
+sub coolMenuItemOnMouseOver
+	window.clearTimeout(dispTimer)
+	if not enabled then exit sub
+	dim el
+	set el = getRealItem(window.event.srcElement)
+	with el
+		if .className = "coolMenuItem" and not subMenuState then
+			dispFade = not checkMenuStates
+			with .runtimeStyle
+				.backgroundColor = "highlight"
+				.color = "highlighttext"
+			end with
+			if .subMenu <> "" then
+				set dispEl = el
+				dispCounter = 0
+				dispTimer = window.setTimeout(GetRef("timedMenuDisplay"), 5)
+			end if
+		end if
+	end with
+	set el = nothing
+end sub
+
+sub coolMenuItemOnMouseOut
+	window.clearTimeout(dispTimer)
+	if not enabled then exit sub
+	dim el
+	set el = getRealItem(window.event.srcElement)
+	with el
+		if .className = "coolMenuItem" then
+			if not subMenuState then
+				with .runtimeStyle
+					.backgroundColor = ""
+					.color = ""
+				end with
+				.parentElement.setMenuItem nothing
+			end if
+		end if
+	end with
+	set el = nothing
+end sub
+
+function getRealItem(el)
+	dim tmpElement
+	set tmpElement = el
+	if (tmpElement.tagName = "IMG") then
+		set tmpElement = tmpElement.parentElement
+	end if
+	if (tmpElement.className = "coolMenuMore") then
+		set tmpElement = tmpElement.parentElement
+	end if
+	set  getRealItem = tmpElement
+	set tmpElement = nothing
+end function
+
+sub timedMenuDisplay
+	dim elMenu
+	window.clearTimeout(dispTimer)
+	if dispCounter < 10 then
+		dispCounter = dispCounter + 1
+		dispTimer = window.setTimeout(GetRef("timedMenuDisplay"), 25)
+		exit sub
+	end if
+	set elMenu = window.document.body.parentElement.document.getElementById(cstr(dispEl.subMenu))
+	showMenu dispEl, elMenu, dispFade
+	dispEl.parentElement.setMenuItem dispEl
+	set elMenu = nothing
+	set dispEl = nothing
+end sub
+
+sub showDisabled
+	if drawState <> "DISABLED" then
+		if isobject(element.onclick) then
+			set onClickHolder = element.onclick
+			element.onclick = nothing
+		end if
+		style.cursor = "default"
+		drawState = "DISABLED"
+		innerHTML =	"<span class='coolDisabled'><span class='coolDisabled'>" & innerHTML & "</span></span>"
+	end if
+end sub
+
+sub showEnabled
+	if drawState = "DISABLED" then
+		if isobject(onClickHolder) then
+			set element.onclick = onClickHolder
+			set onClickHolder = nothing
+		end if
+		style.cursor = "hand"
+		drawState = "ENABLED"
+		innerHTML = children(0).children(0).innerHTML
+	end if
+end sub
+
+function checkMenuStates
+	dim lastMenuItem
+	set lastMenuItem = element.parentElement.getMenuItem()
+	if not lastMenuItem is nothing then
+		if lastMenuItem.subMenuState then
+			lastMenuItem.hideMenu lastMenuItem, window.document.getElementById(cstr(lastMenuItem.subMenu))
+			checkMenuStates = true
+		end if
+	end if
+	set lastMenuItem = nothing
+end function
+
+sub showMenu(elMenuItem, elMenu, blnFade)
+	dim menuRoot
+	if elMenu is nothing then exit sub
+	with elMenu
+		if not .menuSized then .sizeMenu
+		with .style
+			.zIndex = 60
+			.left = elMenuItem.offsetLeft + elMenuItem.offsetWidth + elMenuItem.parentElement.offsetLeft + 2
+			.top = elMenuItem.offsetTop + elMenuItem.parentElement.offsetTop - 1
+		end with
+		elMenuItem.subMenuState = true
+		if blnFade then	.filters.blendTrans.apply()
+		.style.visibility = "visible"
+		if blnFade then	.filters.blendTrans.play()
+		.menuRoot = parentElement.menuRoot
+		set menuRoot = window.document.body.parentElement.document.getElementById(cstr(parentElement.menuRoot))
+		menuRoot.addSubMenu .id, element
+		set menuRoot = nothing
+	end with
+end sub
+
+sub hideMenu(elMenuItem, elMenu)
+	dim menuRoot
+	if subMenuState = false then exit sub
+	if elMenu is nothing then exit sub
+	elMenu.style.visibility = "hidden"
+	with elMenuItem
+		.subMenuState = false
+		with .runtimeStyle
+			.backgroundColor = ""
+			.color = ""
+		end with
+	end with
+	set menuRoot = window.document.body.parentElement.document.getElementById(cstr(parentElement.menuRoot))
+	menuRoot.removeSubMenu elMenu.id
+	set menuRoot = nothing
+end sub
+
+sub coolMenuItemPropertyChange
+	if window.event.propertyName = "enabled" then
+		if not enabled then
+			showDisabled
+		else
+			showEnabled
+		end if
+	end if
+end sub
+
+</script>
+
+</PUBLIC:COMPONENT>

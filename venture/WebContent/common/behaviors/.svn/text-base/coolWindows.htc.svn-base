@@ -1,0 +1,483 @@
+<PUBLIC:COMPONENT
+    lightWeight = true
+>
+
+<PUBLIC:DEFAULTS
+    contentEditable = false
+    tabStop = true
+/>
+
+<PUBLIC:attach event="ondocumentready" onevent="initCoolWindows()" />
+<PUBLIC:attach event="ondetach" onevent="cleanupCoolWindows()" />
+
+<PUBLIC:method   name="createWindow" />
+<PUBLIC:method   name="destroyWindow" />
+<PUBLIC:method   name="sizeWindow" />
+<PUBLIC:method   name="setWindowSource" />
+<PUBLIC:method   name="setWindowVisibility" />
+<PUBLIC:method   name="closeWindows" />
+<PUBLIC:method   name="cascadeWindows" />
+<PUBLIC:method   name="tileWindowsH" />
+<PUBLIC:method   name="tileWindowsV" />
+
+<PUBLIC:property name="windowCount" value=0 />
+<PUBLIC:property name="topWindowzIndex" value=0 />
+
+<script language="VBScript">
+
+' ----------------------------------------------------
+' IEWidgets: CoolWindows
+'                                                     
+' Copyright ©2002 Stedy Software and Systems          
+' Please see http://www.stedy.com for terms of use.   
+' ----------------------------------------------------
+
+option explicit
+
+dim imgDefault
+dim imgMinimize
+dim imgMaximize
+dim imgClose
+
+dim windowCollection
+dim procRef
+dim procRefClick
+dim procRefReady
+dim procRefState
+dim windowURL
+dim settingStates
+
+sub initCoolWindows()
+	with element.currentStyle
+		imgDefault = .defaultImageUrl
+		imgMinimize = .minimizeImageUrl
+		imgMaximize = .maximizeImageUrl
+		imgClose = .closeImageUrl
+	end with
+	set windowCollection = CreateObject("Scripting.Dictionary")
+	set procRef = GetRef("destroyWindow")
+	set procRefClick = GetRef("windowMenuClick")
+	set procRefReady = GetRef("windowReady")
+	set procRefState = GetRef("windowStateSet")
+	windowCount = 0
+end sub
+
+sub cleanupCoolWindows()
+	set windowCollection = nothing
+	set procRef = nothing
+	set procRefClick = nothing
+	set procRefReady = nothing
+	set procRefState = nothing
+end sub
+
+function createWindow(url)
+	dim objWindow, i, col
+	with windowCollection
+		col = .Keys
+		for i = .Count - 1 to 0 step -1
+			if .Exists(col(i)) then
+				set objWindow = .Item(col(i))
+				if objWindow.src = url then
+					objWindow.setActive
+					exit function
+				end if
+				set objWindow = nothing
+			end if
+		next
+	end with
+	windowCount = windowCount + 1
+	windowURL = url
+	set objWindow = document.createElement("DIV")
+	with objWindow
+		.id = "coolWindow_" & windowCount
+		.className = "coolWindow"
+		.style.visibility = "hidden"
+		.innerHTML = "<div class=" & chr(34) & "windowCaption" & chr(34) & " id=" & chr(34) & "capText_" & windowCount & chr(34) & "></div><img class=" & chr(34) & "captionImage" & chr(34) & " src=" & chr(34) & imgDefault & chr(34) & " width=" & chr(34) & "16" & chr(34) & " height=" & chr(34) & "16" & chr(34) & ">" _
+				   & "<span class=" & chr(34) & "captionButton" & chr(34) & " id=" & chr(34) & "btnMin_" & windowCount & chr(34) & "><img src=" & chr(34) & imgMinimize & chr(34) & " width=" & chr(34) & "13" & chr(34) & " height=" & chr(34) & "11" & chr(34) & "></span>" _
+				   & "<span class=" & chr(34) & "captionButton" & chr(34) & " id=" & chr(34) & "btnMax_" & windowCount & chr(34) & "><img src=" & chr(34) & imgMaximize & chr(34) & " width=" & chr(34) & "13" & chr(34) & " height=" & chr(34) & "11" & chr(34) & "></span>" _
+				   & "<span class=" & chr(34) & "captionButton" & chr(34) & " id=" & chr(34) & "btnClose_" & windowCount & chr(34) & "><img src=" & chr(34) & imgClose & chr(34) & " width=" & chr(34) & "13" & chr(34) & " height=" & chr(34) & "11" & chr(34) & "></span>" _
+				   & "<iframe class=" & chr(34) & "windowContent" & chr(34) & " id=" & chr(34) & "winContent_" & windowCount & chr(34) & "></iframe>"
+	end with
+	element.parentElement.insertAdjacentElement "beforeEnd", objWindow
+	addWindow objWindow.id, objWindow, window.document.all("btnClose_" & windowCount)
+	createWindow = objWindow.id
+	set objWindow = nothing
+end function
+
+function destroyWindow()
+	dim objWindow, objCloseButton, objWindowMenuItem
+	with window.event
+		if .button = 2 then exit function
+		set objCloseButton = .srcElement
+	end with
+	set objWindow = objCloseButton.parentElement
+	if not windowCollection.Exists(objWindow.id) then
+		set objWindow = objWindow.parentElement
+	end if
+	if windowCollection.Exists(objWindow.id) then
+		set objWindowMenuItem = window.document.getElementById("windowMenuItem_" & right(objWindow.id, (len(objWindow.id) - instr(objWindow.id, "_"))))
+		objWindowMenuItem.detachEvent "onmouseup", procRefClick
+		objWindowMenuItem.removeNode true
+		objCloseButton.detachEvent "onmouseup", procRef
+		objWindow.detachEvent "onsetwindowstate", procRefState
+		removeWindow objWindow.id
+		objWindow.removeNode true
+	end if
+	set objWindow = nothing
+	set objCloseButton = nothing
+	set objWindowMenuItem = nothing
+end function
+
+sub addWindow(strName, objWindow, objCloseButton)
+	with windowCollection
+		if not .Exists(strName) then
+			.Add strName, strName
+			set .Item(strName) = objWindow
+			objCloseButton.attachEvent "onmouseup", procRef
+			objWindow.attachEvent "onreadystatechange", procRefReady
+		end if
+	end with
+end sub
+
+sub removeWindow(strName)
+	with windowCollection
+		if .Exists(strName) then
+			set .Item(strName) = nothing
+			.Remove strName
+		end if
+	end with
+end sub
+
+sub windowReady()
+	dim objWindowParent, objWindow, objIFrame, windowName, pHeight, pWidth, objMenuItem, c, sizeError
+	set objWindow = window.event.srcElement
+	set objIFrame = window.document.all("winContent_" & windowCount)
+	set objWindowParent = objWindow.parentElement
+	objWindow.detachEvent "onreadystatechange", procRefReady
+	windowName = objWindow.id
+	pHeight = objWindowParent.offsetHeight
+	pWidth = objWindowParent.offsetWidth
+	c = windowCollection.count - 1
+	sizeError = not sizeWindow(objWindow, (c * 25), (c * 10), ((pHeight \ 6) * 5), ((pWidth \ 6) * 5))
+	if sizeError then
+		msgbox "An Error has occured creating a new Window!" & vbcrlf & vbcrlf & _
+		       "Window readyState = " & objWindow.readyState & vbcrlf & _
+		       "contentWindow readyState = " & objIFrame.readyState, 16, "coolWindows.CreateWindow"
+		removeWindow objWindow.id
+		objWindow.removeNode true
+		exit sub
+	end if
+	setWindowSource objWindow, windowURL
+	setWindowVisibility objWindow, true
+	set objMenuItem = document.createElement("DIV")
+	with objMenuItem
+		.id = "windowMenuItem_" & windowCount
+		.className = "coolMenuItem"
+	end with
+	windowMenu.insertAdjacentElement "beforeEnd", objMenuItem
+	objMenuItem.attachEvent "onmouseup", procRefClick
+	objWindow.attachEvent "onsetwindowstate", procRefState
+	set objIFrame = nothing
+	set objWindow = nothing
+	set objWindowParent = nothing
+	set objMenuItem = nothing
+end sub
+
+sub windowMenuClick()
+	dim objWindowMenuItem
+	set objWindowMenuItem = window.event.srcElement
+	if (objWindowMenuItem.tagName = "IMG") then
+		set objWindowMenuItem = objWindowMenuItem.parentElement
+	end if
+	with getWindowByName("coolWindow_" & right(objWindowMenuItem.id, (len(objWindowMenuItem.id) - instr(objWindowMenuItem.id, "_"))))
+		if anyWindowsMaximized then 
+			.windowState = "MAXIMIZED"
+		elseif .windowState = "MINIMIZED" then
+			.windowState = "NORMAL"
+		end if
+		.setActive
+	end with
+	set objWindowMenuItem = nothing
+end sub
+
+sub windowStateSet()
+	dim objWindow, i, col, windowState
+	if settingStates then exit sub
+	settingStates = true
+	set objWindow = window.event.srcElement
+	windowState = getWindowByName(objWindow.id).windowState
+	set objWindow = nothing
+	if windowState <> "MINIMIZED" then
+		with windowCollection
+			col = .Keys
+			for i = .Count - 1 to 0 step -1
+				if .Exists(col(i)) then
+					with .Item(col(i))
+						if windowState = "MAXIMIZED" and .windowState = "NORMAL" or _
+						   windowState = "NORMAL" and .windowState = "MAXIMIZED" then
+							.windowsSettingState = true
+							.windowState = windowState
+							.windowsSettingState = false
+						end if
+					end with
+				end if
+			next
+		end with
+	end if
+	fixMinimizedWindows
+	settingStates = false
+	set objWindow = nothing
+end sub
+
+sub closeWindows()
+	dim i, col
+	with windowCollection
+		do while .Count > 0
+			col = .Keys
+			if .Exists(col(.Count - 1)) then
+				with .Item(col(.Count - 1))
+					.windowsSettingState = true
+					.windowState = "CLOSED"
+				end with
+			end if
+		loop
+	end with
+end sub
+
+sub fixMinimizedWindows
+	dim i, col, minHeight, minWidth, minCount, minAcross, minStacked, minPos
+	minPos = 0
+	minCount = 0
+	minAcross = 0
+	minStacked = 1
+	with windowCollection
+		col = .Keys
+		for i = 0 to .Count - 1
+			if .Exists(col(i)) then
+				if .Item(col(i)).windowState = "MINIMIZED" then
+					if minAcross = 0 then
+						minHeight = .Item(col(i)).offsetHeight
+						minWidth = .Item(col(i)).offsetWidth
+						minAcross = abs(.Item(col(i)).parentElement.offsetWidth \ minWidth)
+					end if
+					if minAcross = minPos then minPos = 0
+					minPos = minPos + 1
+					minCount = minCount + 1
+					minStacked =  abs(minCount \ (minAcross + 1))
+					.Item(col(i)).style.top = .Item(col(i)).parentElement.offsetHeight - ((minStacked + 1) * minHeight)
+					.Item(col(i)).style.left = .Item(col(i)).parentElement.offsetLeft + ((minPos - 1) * minWidth)
+				end if
+			end if
+		next
+	end with
+end sub
+
+sub cascadeWindows()
+	dim i, col, winCount
+	winCount = -1
+	with windowCollection
+		col = .Keys
+		for i = 0 to .Count - 1
+			if .Exists(col(i)) then
+				with .Item(col(i))
+					.windowsSettingState = true
+					if .windowState = "MAXIMIZED" then .windowState = "NORMAL"
+					.windowsSettingState = false
+				end with
+			end if
+		next
+		for i = 0 to .Count - 1
+			if .Exists(col(i)) then
+				if .Item(col(i)).windowState = "NORMAL" then 
+					winCount = winCount + 1
+					sizeWindow .Item(col(i)), (winCount * 25), (winCount * 10), ((.Item(col(i)).parentElement.offsetHeight \ 6) * 5), ((.Item(col(i)).parentElement.offsetWidth \ 6) * 5)
+					.Item(col(i)).style.zIndex = topWindowzIndex + 2
+					topWindowzIndex = topWindowzIndex + 2
+				end if
+			end if
+		next
+	end with
+	fixMinimizedWindows
+end sub
+
+sub tileWindowsH()
+	dim i, col, tileCount, winCount, winHeight, winWidth, winLeftOver
+	tileCount = getWindowsTileCount
+	if tileCount > 1 then
+		with windowCollection
+			col = .Keys
+			winCount = -1
+			with .Item(col(0)).parentElement
+				winHeight = (.clientHeight \ tileCount)
+				winWidth = .clientWidth
+				winLeftOver = .clientHeight - (winHeight * tileCount)
+			end with
+			for i = 0 to .Count - 1
+				if .Exists(col(i)) then
+					with .Item(col(i))
+						.windowsSettingState = true
+						if .windowState = "MAXIMIZED" then .windowState = "NORMAL"
+						.windowsSettingState = false
+					end with
+					if .Item(col(i)).windowState = "NORMAL" then 
+						winCount = winCount + 1
+						sizeWindow .Item(col(i)), winCount * winHeight, 0, winHeight + (abs(i = .Count - 1) * winLeftOver), winWidth
+						.Item(col(i)).style.zIndex = topWindowzIndex + 2
+						topWindowzIndex = topWindowzIndex + 2
+					end if
+				end if
+			next
+		end with
+	elseif tileCount = 1 then
+		with windowCollection
+			col = .Keys
+			for i = 0 to .Count - 1
+				if .Exists(col(i)) then
+					dim winItem
+					set winItem = .Item(col(i))
+					with winItem
+						.windowsSettingState = true
+						if .windowState = "MAXIMIZED" then .windowState = "NORMAL"
+						.windowsSettingState = false
+						if .windowState = "NORMAL" then 
+							sizeWindow winItem, 0, 0, .parentElement.clientHeight, .parentElement.clientWidth
+							.style.zIndex = topWindowzIndex + 2
+							topWindowzIndex = topWindowzIndex + 2
+							exit for
+						end if
+					end with
+					set winItem = nothing
+				end if
+			next
+		end with
+	end if
+	fixMinimizedWindows
+end sub
+
+sub tileWindowsV()
+	dim i, col, tileCount, winCount, winHeight, winWidth, winLeftOver
+	tileCount = getWindowsTileCount
+	if tileCount > 1 then
+		with windowCollection
+			col = .Keys
+			winCount = -1
+			with .Item(col(0)).parentElement
+				winHeight = .clientHeight
+				winWidth = (.clientWidth \ tileCount)
+				winLeftOver = .clientWidth - (winWidth * tileCount)
+			end with
+			for i = 0 to .Count - 1
+				if .Exists(col(i)) then
+					with .Item(col(i))
+						.windowsSettingState = true
+						if .windowState = "MAXIMIZED" then .windowState = "NORMAL"
+						.windowsSettingState = false
+					end with
+					if .Item(col(i)).windowState = "NORMAL" then 
+						winCount = winCount + 1
+						sizeWindow .Item(col(i)), 0, winCount * winWidth, winHeight, winWidth + (abs(i = .Count - 1) * winLeftOver)
+						.Item(col(i)).style.zIndex = topWindowzIndex + 2
+						topWindowzIndex = topWindowzIndex + 2
+					end if
+				end if
+			next
+		end with
+	elseif tileCount = 1 then
+		with windowCollection
+			col = .Keys
+			for i = 0 to .Count - 1
+				if .Exists(col(i)) then
+					dim winItem
+					set winItem = .Item(col(i))
+					with winItem
+						.windowsSettingState = true
+						if .windowState = "MAXIMIZED" then .windowState = "NORMAL"
+						.windowsSettingState = false
+						if .windowState = "NORMAL" then 
+							sizeWindow winItem, 0, 0, .parentElement.clientHeight, .parentElement.clientWidth
+							.style.zIndex = topWindowzIndex + 2
+							topWindowzIndex = topWindowzIndex + 2
+							exit for
+						end if
+					end with
+					set winItem = nothing
+				end if
+			next
+		end with
+	end if
+	fixMinimizedWindows
+end sub
+
+function getWindowByName(strName)
+	set getWindowByName = windowCollection.Item(strName)
+end function
+
+function getWindowsTileCount()
+	dim i, col, winCount
+	winCount = 0
+	with windowCollection
+		col = .Keys
+		for i = .Count - 1 to 0 step -1
+			if .Exists(col(i)) then
+				if .Item(col(i)).windowState <> "MINIMIZED" then
+					winCount = winCount + 1
+				end if
+			end if
+		next
+	end with
+	getWindowsTileCount = winCount
+end function
+
+function anyWindowsMaximized()
+	dim i, col
+	with windowCollection
+		col = .Keys
+		for i = .Count - 1 to 0 step -1
+			if .Exists(col(i)) then
+				if .Item(col(i)).windowState = "MAXIMIZED" then
+					anyWindowsMaximized = true
+					exit function
+				end if
+			end if
+		next
+	end with
+	anyWindowsMaximized = false
+end function
+
+function sizeWindow(objWindow, t, l, h, w)
+	on error resume next
+	with objWindow
+		.top = t
+		if err.number <> 0 then
+			sizeWindow = false
+			exit function
+		end if
+		.left = l
+		.height = h
+		.width = w
+		if anyWindowsMaximized then 
+			.windowState = "MAXIMIZED"
+		end if
+	end with
+	sizeWindow = true
+end function
+
+sub setWindowSource(objWindow, url)
+	with objWindow
+		.src = url
+	end with
+end sub
+
+sub setWindowVisibility(objWindow, bVisible)
+	dim visString
+	if bVisible then visString = "visible" else visString = "hidden"
+	with objWindow
+		.style.visibility = visString
+		.style.zIndex = topWindowzIndex + 2
+		topWindowzIndex = topWindowzIndex + 2
+	end with
+end sub
+
+</script>
+
+</PUBLIC:COMPONENT>

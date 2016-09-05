@@ -1,0 +1,918 @@
+<PUBLIC:COMPONENT
+    lightWeight = true
+>
+
+<PUBLIC:DEFAULTS
+    contentEditable = false
+    tabStop = true
+/>
+
+<PUBLIC:attach event="ondocumentready" onevent="initCoolWindowEx()" />
+<PUBLIC:attach event="ondetach" onevent="cleanupCoolWindowEx()" />
+<PUBLIC:attach event="onpropertychange" onevent="coolWindowExPropertyChange()" />
+
+<PUBLIC:property name="left" value="0px" />
+<PUBLIC:property name="top" value="0px" />
+<PUBLIC:property name="height" value="200px" />
+<PUBLIC:property name="width" value="250px" />
+<PUBLIC:property name="windowType" value="DIALOG" />
+<PUBLIC:property name="windowState" value="NORMAL" />
+<PUBLIC:property name="menuState" value=false />
+<PUBLIC:property name="src" value="" />
+<PUBLIC:property name="windowCaption" value="" />
+
+<PUBLIC:method   name="hideMenu" />
+
+<script language="VBScript">
+
+' ----------------------------------------------------
+' IEWidgets: CoolWindowEx
+'                                                     
+' Copyright ©2002 Stedy Software and Systems          
+' Please see http://www.stedy.com for terms of use.   
+' ----------------------------------------------------
+
+option explicit
+
+dim imgTransparent
+dim imgRestore
+dim imgMinimize
+dim imgMaximize
+dim imgClose
+
+dim objWindowCaption
+dim objCaptionImage
+dim objMinButton
+dim objMaxButton
+dim objCloseButton
+dim objCurrentButton
+dim objContentWindow
+dim objMenu
+
+dim objDrag
+dim objResize
+dim objWindowState
+
+dim procRef
+dim procRefUp
+dim procRefMove
+
+dim internalSettingProperties
+
+class clsObjectCoords
+	private v_orgX
+	private v_orgY
+	private v_orgLeft
+	private v_orgTop
+	private v_orgWidth
+	private v_orgHeight
+	private v_orgOffsetWidth
+	private v_orgOffsetHeight
+	private v_orgDirection
+	private v_orgBorder
+	private v_inAction
+	private v_prevState
+	
+	public property Let orgX(vData)
+		v_orgX = vData
+	end property
+
+	public property Get orgX
+		orgX = v_orgX
+	end property
+	
+	public property Let orgY(vData)
+		v_orgY = vData
+	end property
+
+	public property Get orgY
+		orgY = v_orgY
+	end property
+	
+	public property Let orgLeft(vData)
+		v_orgLeft = vData
+	end property
+
+	public property Get orgLeft
+		orgLeft = v_orgLeft
+	end property
+
+	public property Let orgTop(vData)
+		v_orgTop = vData
+	end property
+
+	public property Get orgTop
+		orgTop = v_orgTop
+	end property
+
+	public property Let orgWidth(vData)
+		v_orgWidth = vData
+	end property
+
+	public property Get orgWidth
+		orgWidth = v_orgWidth
+	end property
+	
+	public property Let orgHeight(vData)
+		v_orgHeight = vData
+	end property
+
+	public property Get orgHeight
+		orgHeight = v_orgHeight
+	end property
+	
+	public property Let orgOffsetWidth(vData)
+		v_orgOffsetWidth = vData
+	end property
+
+	public property Get orgOffsetWidth
+		orgOffsetWidth = v_orgOffsetWidth
+	end property
+	
+	public property Let orgOffsetHeight(vData)
+		v_orgOffsetHeight = vData
+	end property
+
+	public property Get orgOffsetHeight
+		orgOffsetHeight = v_orgOffsetHeight
+	end property
+	
+	public property Let orgDirection(vData)
+		v_orgDirection = vData
+	end property
+
+	public property Get orgDirection
+		orgDirection = v_orgDirection
+	end property
+	
+	public property Let orgBorder(vData)
+		v_orgBorder = vData
+	end property
+
+	public property Get orgBorder
+		orgBorder = v_orgBorder
+	end property
+	
+	public property Let inAction(vData)
+		v_inAction = vData
+	end property
+
+	public property Get inAction
+		inAction = v_inAction
+	end property
+	
+	public property Let prevState(vData)
+		v_prevState = vData
+	end property
+
+	public property Get prevState
+		prevState = v_prevState
+	end property
+
+end class
+
+sub initCoolWindowEx()
+	dim childElement, txtHTML
+
+	set objDrag = new clsObjectCoords
+	set objResize = new clsObjectCoords
+	set objWindowState = new clsObjectCoords
+	
+	objDrag.inAction = false
+	objResize.inAction = false
+	objWindowState.orgBorder = element.parentElement.style.border
+
+	with element.currentStyle
+		imgTransparent = .transparentImageUrl
+		imgRestore = .restoreImageUrl
+		imgMinimize = .minimizeImageUrl
+		imgMaximize = .maximizeImageUrl
+		imgClose = .closeImageUrl
+	end with
+
+	for each childElement in element.children	
+		select case childElement.className
+			case "captionImage"
+				set objCaptionImage = childElement
+				set objMenu = document.createElement("DIV")
+				objMenu.className = "coolMenu"
+				if windowType = "NORMAL" then txtHTML = "<div class=" & chr(34) & "coolMenuItem" & chr(34) & " style=" & chr(34) & "height: 18px; padding-top: 2px;" & chr(34) & " onclick=" & chr(34) & "vbscript: " & element.id & ".windowState='NORMAL'" & chr(34) & " enabled=" & chr(34) & "false" & chr(34) & "><img src=" & chr(34) & imgRestore & chr(34) & " width=" & chr(34) & "13" & chr(34) & " height=" & chr(34) & "11" & chr(34) & ">Restore</div>"
+				txtHTML = txtHTML & "<div class=" & chr(34) & "coolMenuItem" & chr(34) & " style=" & chr(34) & "height: 18px; padding-top: 2px;" & chr(34) & " onclick=" & chr(34) & "vbscript: " & chr(34) & "><img src=" & chr(34) & imgTransparent & chr(34) & " width=" & chr(34) & "13" & chr(34) & " height=" & chr(34) & "11" & chr(34) & ">Move</div>"
+				if windowType = "NORMAL" then txtHTML = txtHTML & "<div class=" & chr(34) & "coolMenuItem" & chr(34) & " style=" & chr(34) & "height: 18px; padding-top: 2px;" & chr(34) & " onclick=" & chr(34) & "vbscript: " & chr(34) & "><img src=" & chr(34) & imgTransparent & chr(34) & " width=" & chr(34) & "13" & chr(34) & " height=" & chr(34) & "11" & chr(34) & ">Size</div>"
+				if windowType = "NORMAL" then txtHTML = txtHTML & "<div class=" & chr(34) & "coolMenuItem" & chr(34) & " style=" & chr(34) & "height: 18px; padding-top: 2px;" & chr(34) & " onclick=" & chr(34) & "vbscript: " & element.id & ".windowState='MINIMIZED'" & chr(34) & "><img src=" & chr(34) & imgMinimize & chr(34) & " width=" & chr(34) & "13" & chr(34) & " height=" & chr(34) & "11" & chr(34) & ">Minimize</div>"
+				if windowType = "NORMAL" then txtHTML = txtHTML & "<div class=" & chr(34) & "coolMenuItem" & chr(34) & " style=" & chr(34) & "height: 18px; padding-top: 2px;" & chr(34) & " onclick=" & chr(34) & "vbscript: " & element.id & ".windowState='MAXIMIZED'" & chr(34) & "><img src=" & chr(34) & imgMaximize & chr(34) & " width=" & chr(34) & "13" & chr(34) & " height=" & chr(34) & "11" & chr(34) & ">Maximize</div>"
+				if windowType = "NORMAL" then txtHTML = txtHTML & "<div class=" & chr(34) & "coolMenuDivider" & chr(34) & "></div>"
+				txtHTML = txtHTML & "<div class=" & chr(34) & "coolMenuItem" & chr(34) & " style=" & chr(34) & "height: 18px; padding-top: 2px;" & chr(34) & " onclick=" & chr(34) & "vbscript: " & element.id & ".windowState='CLOSED'" & chr(34) & "><img src=" & chr(34) & imgClose & chr(34) & " width=" & chr(34) & "13" & chr(34) & " height=" & chr(34) & "11" & chr(34) & ">Close</div>"
+				objMenu.innerHTML = txtHTML
+				window.document.body.insertBefore objMenu
+			case "windowCaption"
+				set objWindowCaption = childElement
+				objWindowCaption.nowrap = true
+			case "captionButton"
+				if instr(childElement.id, "btnMin") <> 0 then
+					set objMinButton = childElement
+					objMinButton.title = "Minimize"
+					objMinButton.children(0).setAttribute "src", imgMinimize
+					if windowType <> "NORMAL" then objMinButton.style.display = "none"
+				elseif instr(childElement.id, "btnMax") <> 0 then
+					set objMaxButton = childElement
+					objMaxButton.title = "Maximize"
+					objMaxButton.children(0).setAttribute "src", imgMaximize
+					if windowType <> "NORMAL" then objMaxButton.style.display = "none"
+				elseif instr(childElement.id, "btnClose") <> 0 then
+					set objCloseButton = childElement
+					objCloseButton.title = "Close"
+					objCloseButton.children(0).setAttribute "src", imgClose
+				end if
+			case "windowContent"
+				set objContentWindow = childElement
+		end select
+	next
+	
+	with objCaptionImage
+		.attachEvent "onmousedown", GetRef("captionImageOnMouseDown")
+		.attachEvent "onmouseup", GetRef("captionImageOnMouseUp")
+		.attachEvent "ondblclick", GetRef("captionImageOnDoubleClick")
+		.attachEvent "oncontextmenu", GetRef("coolWindowHandleDown")
+	end with
+	
+	with objWindowCaption
+		.attachEvent "onmousedown", GetRef("captionOnMouseDown")
+		.attachEvent "ondblclick", GetRef("captionOnDoubleClick")
+		.attachEvent "oncontextmenu", GetRef("coolWindowHandleDown")
+	end with
+	
+	with objMinButton
+		.attachEvent "onmousedown", GetRef("buttonOnMouseDown")
+		.attachEvent "onmouseup", GetRef("buttonOnMouseUp")
+		.attachEvent "oncontextmenu", GetRef("coolWindowHandleDown")
+	end with
+
+	with objMaxButton
+		.attachEvent "onmousedown", GetRef("buttonOnMouseDown")
+		.attachEvent "onmouseup", GetRef("buttonOnMouseUp")
+		.attachEvent "oncontextmenu", GetRef("coolWindowHandleDown")
+	end with
+	
+	with objCloseButton
+		.attachEvent "onmousedown", GetRef("buttonOnMouseDown")
+		.attachEvent "onmouseup", GetRef("buttonOnMouseUp")
+		.attachEvent "oncontextmenu", GetRef("coolWindowHandleDown")
+	end with
+	
+	with objContentWindow
+		.attachEvent "onload", GetRef("contentOnLoad")
+		.attachEvent "oncontextmenu", GetRef("coolWindowHandleDown")
+	end with
+	
+	attachEvent "onselectstart", GetRef("coolWindowOnSelect")
+	attachEvent "onmousedown", GetRef("coolWindowOnMouseDown")
+	attachEvent "onmouseup", GetRef("coolWindowOnMouseUp")
+	attachEvent "onmousemove", GetRef("coolWindowOnMouseMove")
+	attachEvent "onresize", GetRef("windowOnResize")
+	attachEvent "oncontextmenu", GetRef("coolWindowHandleDown")
+	
+	set procRef = GetRef("parentWindowOnMouseDown")
+	set procRefUp = GetRef("captionOnMouseUp")
+	set procRefMove = GetRef("captionOnMouseMove")
+	
+	if windowState = "MAXIMIZED" then setWindowState
+	
+	objContentWindow.setAttribute "src", element.src
+end sub
+
+sub cleanupCoolWindowEx()
+	objContentWindow.setAttribute "src", "about:blank"
+
+	with objCaptionImage
+		.detachEvent "onmousedown", GetRef("captionImageOnMouseDown")
+		.detachEvent "onmouseup", GetRef("captionImageOnMouseUp")
+		.detachEvent "ondblclick", GetRef("captionImageOnDoubleClick")
+		.detachEvent "oncontextmenu", GetRef("coolWindowHandleDown")
+	end with
+	
+	with objWindowCaption
+		.detachEvent "onmousedown", GetRef("captionOnMouseDown")
+		.detachEvent "ondblclick", GetRef("captionOnDoubleClick")
+		.detachEvent "oncontextmenu", GetRef("coolWindowHandleDown")
+	end with
+	
+	with objMinButton
+		.detachEvent "onmousedown", GetRef("buttonOnMouseDown")
+		.detachEvent "onmouseup", GetRef("buttonOnMouseUp")
+		.detachEvent "oncontextmenu", GetRef("coolWindowHandleDown")
+	end with
+
+	with objMaxButton
+		.detachEvent "onmousedown", GetRef("buttonOnMouseDown")
+		.detachEvent "onmouseup", GetRef("buttonOnMouseUp")
+		.detachEvent "oncontextmenu", GetRef("coolWindowHandleDown")
+	end with
+	
+	with objCloseButton
+		.detachEvent "onmousedown", GetRef("buttonOnMouseDown")
+		.detachEvent "onmouseup", GetRef("buttonOnMouseUp")
+		.detachEvent "oncontextmenu", GetRef("coolWindowHandleDown")
+	end with
+	
+	with objContentWindow
+		.detachEvent "onload", GetRef("contentOnLoad")
+		.detachEvent "oncontextmenu", GetRef("coolWindowHandleDown")
+	end with
+	
+	detachEvent "onselectstart", GetRef("coolWindowOnSelect")
+	detachEvent "onmousedown", GetRef("coolWindowOnMouseDown")
+	detachEvent "onmouseup", GetRef("coolWindowOnMouseUp")
+	detachEvent "onmousemove", GetRef("coolWindowOnMouseMove")
+	detachEvent "onresize", GetRef("windowOnResize")
+	detachEvent "oncontextmenu", GetRef("coolWindowHandleDown")
+
+	if not objWindowCaption is nothing then objWindowCaption.removeNode true
+	set objWindowCaption = nothing
+	if not objCaptionImage is nothing then objCaptionImage.removeNode true
+	set objCaptionImage = nothing
+	if not objMaxButton is nothing then objMaxButton.removeNode true
+	set objMaxButton = nothing
+	if not objCloseButton is nothing then objCloseButton.removeNode true
+	set objCloseButton = nothing
+	if not objContentWindow is nothing then objContentWindow.removeNode true
+	set objContentWindow = nothing
+	if not objMenu is nothing then objMenu.removeNode true
+	set objMenu = nothing
+	
+	set procRef = nothing
+	set procRefUp = nothing
+	set procRefMove = nothing
+
+	set objDrag = nothing
+	set objResize = nothing
+	set objWindowState = nothing
+end sub
+
+sub contentOnLoad
+	dim strTitle
+	on error resume next
+	strTitle = window.event.srcElement.contentWindow.document.title
+	if trim(element.windowCaption) <> "" then strTitle = element.windowCaption
+	strTitle = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" & strTitle
+	objWindowCaption.innerHTML = strTitle
+	on error goto 0
+end sub
+
+function coolWindowHandleDown
+    with window.event
+		if .srcElement is objWindowCaption or .srcElement is objCaptionImage then
+			showMenu objMenu, .clientX, .clientY
+			menuState = true
+			.cancelBubble = true
+			.returnValue = false
+		end if
+	end with
+	coolWindowHandleDown = false
+end function
+
+function parentWindowOnMouseDown()
+	dim el, clk
+	if not window.event is nothing then
+		with window.event
+			set el = .srcElement
+			if menuState then hideMenu
+			if not el is nothing then
+				if el.className = "coolMenuItem" then
+					set clk = el.onclick
+					if not clk is nothing then clk
+					.returnValue = false
+					.cancelBubble = true
+				end if
+			end if
+		end with
+	end if
+	set el = nothing
+	set clk = nothing
+end function
+
+function coolWindowOnMouseDown
+	dim ev
+	if menuState then hideMenu
+	set ev = window.event
+	if ev.srcElement is element then
+		if ev.button = 1 and objResize.orgDirection <> "" then
+			with objResize
+				.inAction = true
+				.orgX = ev.clientX
+				.orgY = ev.clientY
+				.orgTop = element.offsetTop
+				.orgLeft = element.offsetLeft
+				.orgHeight = element.offsetHeight
+				.orgWidth = element.offsetWidth
+			end with
+			element.setCapture
+			with ev
+				.returnValue = false
+				.cancelBubble = true
+			end with
+		end if
+	end if
+	set ev = nothing
+end function
+
+function coolWindowOnMouseUp
+	if objResize.inAction then
+		objResize.inAction = false
+		element.releaseCapture
+	end if
+end function
+
+function coolWindowOnMouseMove
+	dim strCursor, intX, intL, intY, intT, cliX, cliY, btnWidth
+	if objDrag.inAction then exit function
+	if objResize.inAction then
+		btnWidth = objCloseButton.offsetWidth
+		with window.event
+			cliX = .clientX
+			cliY = .clientY
+			.returnValue = false
+			.cancelBubble = true
+		end with
+		with objResize
+			if instr(.orgDirection, "e") <> 0 then
+				intX = cint(.orgWidth + cliX - .orgX)
+				if intX < 60 then intX = 60
+				element.style.width = cstr(intX) & "px"
+				intX = intX - 8
+				objCloseButton.style.left = cstr(intX - btnWidth) & "px"
+				objMaxButton.style.left = cstr(objCloseButton.offsetLeft - btnWidth - 2) & "px"
+				objMinButton.style.left = cstr(objMaxButton.offsetLeft - btnWidth) & "px"
+				objContentWindow.style.width = cstr(intX) & "px"
+			end if
+			if instr(.orgDirection, "s") <> 0 then
+				intY = cint(.orgHeight + cliY - .orgY)
+				if intY < 60 then intY = 60
+				element.style.height = cstr(intY) & "px"
+				objContentWindow.style.height = cstr(intY - objWindowCaption.offsetHeight - 10) & "px"
+			end if
+			if instr(.orgDirection, "w") <> 0 then
+				intX = cint(.orgWidth - cliX + .orgX)
+				intL = cint(.orgLeft + cliX - .orgX)
+				if intX < 60 then
+					intX = 60
+					intL = .orgLeft + .orgWidth - 60
+				end if
+				element.style.left = cstr(intL) & "px"
+				element.style.width = cstr(intX) & "px"
+				intX = intX - 8
+				objCloseButton.style.left = cstr(intX - btnWidth) & "px"
+				objMaxButton.style.left = cstr(objCloseButton.offsetLeft - btnWidth - 2) & "px"
+				objMinButton.style.left = cstr(objMaxButton.offsetLeft - btnWidth) & "px"
+				objContentWindow.style.width = cstr(intX) & "px"
+			end if
+			if instr(.orgDirection, "n") <> 0 then
+				intY = cint(.orgHeight - cliY + .orgY)
+				intT = cint(.orgTop + cliY - .orgY)
+				if intY < 60 then
+					intY = 60
+					intT = .orgTop + .orgHeight - 60
+				end if
+				with element.style
+					.top = cstr(intT) & "px"
+					.height = cstr(intY) & "px"
+				end with
+				objContentWindow.style.height = cstr(intY - objWindowCaption.offsetHeight - 10) & "px"
+			end if
+		end with
+	else
+		if window.event.srcElement is element then
+			if windowState = "NORMAL" then 
+				with objResize
+					.orgDirection = getResizeDirection()
+					if .orgDirection = "" then
+						strCursor = "default"
+					else
+						strCursor = .orgDirection & "-resize"
+					end if
+				end with
+				element.style.cursor = strCursor
+			end if
+		end if
+	end if
+end function
+
+function coolWindowOnSelect
+	with window.event
+		.cancelBubble = true
+		.returnValue = false
+	end with
+	coolWindowOnSelect = false
+end function
+
+sub windowOnResize
+	dim h, w
+	if menuState then hideMenu
+	with element
+		h = .offsetHeight - 6
+		w = .offsetWidth - 3
+	end with
+	if windowState = "MAXIMIZED" then
+		objCloseButton.style.left = w - objCloseButton.offsetWidth + 1
+		objMaxButton.style.left = objCloseButton.offsetLeft - objCloseButton.offsetWidth - 2
+		objMinButton.style.left = objMaxButton.offsetLeft - objMaxButton.offsetWidth
+		with objContentWindow.style
+			.width = w
+			.height = h - objWindowCaption.offsetHeight
+		end with
+	end if
+end sub
+
+sub captionImageOnMouseDown
+	element.setActive
+	with window.event
+		if objMenu.style.visibility <> "visible" then
+			if .button = 1 then
+				showMenu objMenu, .clientX, .clientY
+				menuState = true
+				.cancelBubble = true
+				.returnValue = false
+			end if
+		else
+			menuState = false
+		end if
+	end with
+end sub
+
+sub captionImageOnMouseUp
+	if objMenu.style.visibility = "visible" then
+		if not menuState then hideMenu
+	end if
+end sub
+
+sub captionImageOnDoubleClick
+	element.style.visibility = "hidden"
+end sub
+
+sub captionOnDoubleClick
+	if windowType <> "NORMAL" then exit sub
+	internalSettingProperties = true
+	objWindowState.prevState = windowState
+	select case windowState
+		case "MINIMIZED"
+			windowState = "NORMAL"
+		case "MAXIMIZED"
+			windowState = "NORMAL"
+		case "NORMAL"
+			windowState = "MAXIMIZED"
+	end select
+	setWindowState
+	internalSettingProperties = false
+end sub
+
+sub captionOnMouseDown
+	if menuState then hideMenu
+	with window.event
+		if .button <> 1 then exit sub
+		objDrag.inAction = true
+		objDrag.orgX = .clientX - element.style.pixelLeft
+		objDrag.orgY = .clientY - element.style.pixelTop
+		.cancelBubble = true
+		.returnValue = false
+	end with
+	element.setCapture
+	with window.document
+		.attachEvent "onmouseup", procRefUp
+		.attachEvent "onmousemove", procRefMove
+	end with
+end sub
+
+sub captionOnMouseUp
+	objDrag.inAction = false
+	with window.document
+		.detachEvent "onmouseup", procRefUp
+		.detachEvent "onmousemove", procRefMove
+	end with
+	element.releaseCapture
+end sub
+
+sub captionOnMouseMove
+	if windowState = "MAXIMIZED" then exit sub
+	with window.event
+		if .clientX > 0 and .clientX < element.parentElement.offsetWidth then style.left = .clientX - objDrag.orgX
+		if .clientY > 0 and .clientY < element.parentElement.offsetHeight then style.top = .clientY - objDrag.orgY
+		.returnValue = false
+		.cancelBubble = true
+	end with
+end sub
+
+sub buttonOnMouseDown
+	dim el
+	if menuState then hideMenu
+	with window.event
+		if .button <> 1 then exit sub
+		set el = .srcElement
+	end with
+	if el.tagName = "IMG" then set el = el.parentElement
+	showPressed el, el.children(0)
+	el.setCapture
+	set objCurrentButton = el
+	set el = nothing
+end sub
+
+sub buttonOnMouseUp
+	dim el
+	with window.event
+		if .button <> 1 then exit sub
+		set el = .srcElement
+	end with
+	if el.tagName = "IMG" then set el = el.parentElement
+	if el is objCurrentButton then
+		with el
+			showRaised el, .children(0)
+			objWindowState.prevState = windowState
+			if instr(.id, "btnMin") <> 0 then
+				internalSettingProperties = true
+				if windowState = "MINIMIZED" then windowState = "NORMAL" else windowState = "MINIMIZED"
+				internalSettingProperties = false
+				setWindowState
+			elseif instr(.id, "btnMax") <> 0 then
+				internalSettingProperties = true
+				if windowState = "MAXIMIZED" then windowState = "NORMAL" else windowState = "MAXIMIZED"
+				setWindowState
+				internalSettingProperties = false
+			elseif instr(.id, "btnClose") <> 0 then
+				internalSettingProperties = true
+				windowState = "CLOSED"
+				setWindowState
+				internalSettingProperties = false
+			end if
+		end with
+	else
+		showRaised objCurrentButton, objCurrentButton.children(0)
+	end if
+	objCurrentButton.releaseCapture
+	set objCurrentButton = nothing
+	set el = nothing
+end sub
+
+sub setWindowState
+	select case windowState
+		case "CLOSED"
+			element.style.visibility = "hidden"
+			if menuState then hideMenu
+			internalSettingProperties = true
+			windowState = "NORMAL"
+			element.style.border = "2px outset window"
+			internalSettingProperties = false
+		case "MINIMIZED"
+			with element.style
+				if objWindowState.prevState <> "MAXIMIZED" then
+					objWindowState.orgTop = .top
+					objWindowState.orgLeft = .left
+					objWindowState.orgHeight = .height
+					objWindowState.orgWidth = .width
+					objWindowState.orgOffsetHeight = OffsetHeight
+					objWindowState.orgOffsetWidth = OffsetWidth
+					objWindowState.orgBorder = element.parentElement.style.border
+				end if
+				.border = "2px outset window"
+				.top = parentElement.offsetHeight - (objWindowCaption.offsetheight + 10)
+				.left = parentElement.offsetLeft
+				.height = objWindowCaption.offsetheight + 8
+				.width = 160
+			end with
+			with objCloseButton
+				.style.left = cstr(153 - .offsetWidth) & "px"
+			end with
+			with objMaxButton
+				.children(0).setAttribute "src", imgMaximize
+				.title = "Maximize"
+				.style.left = cstr(objCloseButton.offsetLeft - objCloseButton.offsetWidth - 2) & "px"
+			end with
+			with objMinButton
+				.children(0).setAttribute "src", imgRestore
+				.title = "Restore Window"
+				.style.left = cstr(objMaxButton.offsetLeft - objMaxButton.offsetWidth) & "px"
+			end with
+		case "NORMAL"
+			with element.style
+				.border = "2px outset window"
+				.top = objWindowState.orgTop
+				.left = objWindowState.orgLeft
+				.height = objWindowState.orgHeight
+				.width = objWindowState.orgWidth
+				element.parentElement.style.border = objWindowState.orgBorder
+			end with
+			with objCloseButton
+				.style.left = cstr(objWindowState.orgOffsetWidth - 8 - .offsetWidth) & "px"
+			end with
+			with objMaxButton
+				.children(0).setAttribute "src", imgMaximize
+				.title = "Maximize"
+				.style.left = cstr(objCloseButton.offsetLeft - objCloseButton.offsetWidth - 2) & "px"
+			end with
+			with objMinButton
+				.children(0).setAttribute "src", imgMinimize
+				.title = "Minimize"
+				.style.left = cstr(objMaxButton.offsetLeft - objMaxButton.offsetWidth) & "px"
+			end with
+			with objContentWindow
+				.style.width = cstr(objWindowState.orgOffsetWidth - 8) & "px"
+				.style.height = cstr(objWindowState.orgOffsetHeight - objWindowCaption.offsetHeight - 10) & "px"
+			end with
+		case "MAXIMIZED"
+			with element.style
+				if objWindowState.prevState <> "MINIMIZED" then
+					objWindowState.orgTop = .top
+					objWindowState.orgLeft = .left
+					objWindowState.orgHeight = .height
+					objWindowState.orgWidth = .width
+					objWindowState.orgOffsetHeight = OffsetHeight
+					objWindowState.orgOffsetWidth = OffsetWidth
+					objWindowState.orgBorder = element.parentElement.style.border
+				end if
+				element.parentElement.style.border = ""
+				.border = ""
+				.top = 0
+				.left = 0
+				.height = "100%"
+				.width = "100%"
+			end with
+			with objMaxButton
+				.children(0).setAttribute "src", imgRestore
+				.title = "Restore Window"
+			end with
+			with objMinButton
+				.children(0).setAttribute "src", imgMinimize
+				.title = "Minimize"
+			end with
+	end select
+end sub
+
+sub showRaised(el, elImage)
+	with el.style
+		.borderLeft   = "1px solid buttonhighlight"
+		.borderRight  = "1px solid threeddarkshadow"
+		.borderTop    = "1px solid buttonhighlight"
+		.borderBottom = "1px solid threeddarkshadow"
+	end with
+	with elImage.style
+		.borderLeft   = ""
+		.borderRight  = "1px solid buttonshadow"
+		.borderTop    = ""
+		.borderBottom = "1px solid buttonshadow"
+	end with
+end sub
+
+sub showPressed(el, elImage)
+	with el.style
+		.borderLeft   = "1px solid threeddarkshadow"
+		.borderRight  = "1px solid buttonhighlight"
+		.borderTop    = "1px solid threeddarkshadow"
+		.borderBottom = "1px solid buttonhighlight"
+	end with
+	with elImage.style
+		.borderLeft   = "1px solid buttonshadow"
+		.borderRight  = ""
+		.borderTop    = "1px solid buttonshadow"
+		.borderBottom = ""
+	end with
+end sub
+
+function getResizeDirection()
+	dim xPos, yPos, offSet, sResult
+	offSet = 8
+	with window.event
+		xPos = .offsetX
+		yPos = .offsetY
+	end with
+	if yPos < offSet then
+		sResult = sResult & "n"
+	elseif yPos > element.offsetHeight - offSet then
+		sResult = sResult & "s"
+	end if
+	if xPos < offSet then
+		sResult = sResult & "w"
+	elseif xPos > element.offsetWidth - offSet then
+		sResult = sResult & "e"
+	end if
+	getResizeDirection = sResult
+end function
+
+sub showMenu(elMenu, x, y)
+	dim intRightEdge
+	dim intBottomEdge
+	dim intScrollLeft
+	dim intScrollTop
+	if not elMenu.menuSized then elMenu.sizeMenu
+	menuState = true
+	with parentElement.document.body
+		intRightEdge = .clientWidth - x
+		intBottomEdge = .clientHeight - y
+		intScrollLeft = .scrollLeft + x
+		intScrollTop = .scrollTop + y
+	end with
+	with elMenu
+		if (intRightEdge < .offsetWidth) then
+			.style.left = intScrollLeft - .offsetWidth
+		else
+			.style.left = intScrollLeft
+		end if
+		if (intBottomEdge < .offsetHeight) then
+			.style.top = intScrollTop - .offsetHeight
+		else
+			.style.top = intScrollTop
+		end if
+		.style.zIndex = 50
+		.filters.blendTrans.apply()
+		.style.visibility = "visible"
+		.filters.blendTrans.play()
+	end with
+	window.document.attachEvent "onmousedown", procRef
+	on error resume next
+	set objContentWindow.contentWindow.objCoolWindow = element
+	if windowType = "NORMAL" then 
+		select case windowState
+			case "MINIMIZED"
+				with objMenu
+					.children(0).enabled = true
+					.children(3).enabled = false
+					.children(4).enabled = true
+				end with
+			case "NORMAL"
+				with objMenu
+					.children(0).enabled = false
+					.children(3).enabled = true
+					.children(4).enabled = true
+				end with
+			case "MAXIMIZED"
+				with objMenu
+					.children(0).enabled = true
+					.children(3).enabled = true
+					.children(4).enabled = false
+				end with
+		end select
+	end if
+end sub
+
+sub hideMenu
+	if objContentWindow is nothing or objMenu is nothing then exit sub
+	window.document.detachEvent "onmousedown", procRef
+	on error resume next
+	set objContentWindow.contentWindow.objCoolWindow = nothing
+	objMenu.style.visibility = "hidden"
+	menuState = false
+end sub
+
+sub coolWindowExPropertyChange
+	if internalSettingProperties then exit sub
+	select case ucase(window.event.propertyName)
+		case "WINDOWSTATE"
+			setWindowState
+		case "SRC"
+			objContentWindow.setAttribute "src", element.src
+		case "LEFT", "TOP", "WIDTH", "HEIGHT"
+			dim capWidth, capHeight, capTop, btnWidth, btnHeight, imgHeight, l, t
+			if objResize.inAction then exit sub
+			if objDrag.inAction then exit sub
+			if windowState = "MAXIMIZED" then exit sub
+			with element
+				.style.left = left
+				.style.top = top
+				.style.width = width
+				.style.height = height
+			end with
+			with objWindowCaption
+				capWidth = .offsetWidth
+				capHeight = .offsetHeight
+				capTop = .offsetTop
+			end with
+			with objCloseButton
+				btnWidth = .offsetWidth
+				btnHeight = .offsetHeight
+			end with
+			with objCaptionImage
+				imgHeight = objCaptionImage.offsetHeight
+				t = (capHeight \ 2) - (imgHeight \ 2) + capTop
+				.style.top = t
+			end with
+			t = (capHeight \ 2) - (btnHeight \ 2) + capTop
+			with objCloseButton
+				.style.top = t
+				.style.left = capWidth - btnWidth + 1
+				l = .offsetLeft - btnWidth - 2
+			end with
+			with objMaxButton
+				.style.top = t
+				.style.left = l
+			end with
+			with objMinButton
+				.style.top = t
+				.style.left = l - btnWidth
+			end with
+			with objContentWindow
+				.style.width = capWidth
+				.style.height = element.offsetHeight - capHeight - 10
+			end with
+	end select
+end sub
+
+</script>
+
+</PUBLIC:COMPONENT>

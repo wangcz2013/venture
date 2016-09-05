@@ -1,0 +1,587 @@
+<PUBLIC:COMPONENT
+    lightWeight = true
+>
+
+<PUBLIC:DEFAULTS
+    contentEditable = false
+    tabStop = true
+/>
+
+<PUBLIC:attach event="ondocumentready" onevent="initCoolOLBar()" />
+<PUBLIC:attach event="ondetach" onevent="cleanupCoolOLBar()" />
+<public:attach event="onmouseover" onevent="coolOLBarOnMouseOver()" />
+<public:attach event="onmouseout" onevent="coolOLBarOnMouseOut()" />
+<public:attach event="onmousedown" onevent="coolOLBarOnMouseDown()" />
+<public:attach event="onmouseup" onevent="coolOLBarOnMouseUp()" />
+<public:attach event="onresize" onevent="coolOLBarOnResize()" />
+
+<PUBLIC:property name="borderStyle" value=0 />
+
+<script language="VBScript">
+
+' ----------------------------------------------------
+' IEWidgets: CoolOLBar
+'                                                     
+' Copyright ©2002 Stedy Software and Systems          
+' Please see http://www.stedy.com for terms of use.   
+' ----------------------------------------------------
+
+option explicit
+
+dim selectedGroup
+dim selectedButton
+dim blnSlidingGroup
+
+selectedGroup = 0
+set selectedButton = nothing
+blnSlidingGroup = false
+
+sub initCoolOLBar()
+	setOLBarBorder
+	style.width = width
+	style.height = height
+	with window
+		.attachEvent "onload", GetRef("actionOnLoad")
+	end with
+end sub
+
+sub cleanupCoolOLBar
+	with window
+		.detachEvent "onload", GetRef("actionOnLoad")
+	end with
+end sub
+
+sub actionOnLoad
+	setGroupPositions
+end sub
+
+sub coolOLBarOnMouseOver
+	dim objUnknown
+	set objUnknown = window.event.srcElement
+	select case objUnknown.className
+		case "coolOLBarContainerButton"
+			with objUnknown.style
+				.paddingLeft = "3px"
+				.paddingBottom = "2px"
+				.borderBottom = "solid 2 buttonshadow"
+				.borderRight = "solid 2 buttonshadow"
+			end with
+		case "coolOLBarScrollButton"
+			with objUnknown.style
+				.borderTop = "solid 1 buttonhighlight"
+				.borderBottom = "solid 1 buttonshadow"
+				.borderLeft = "solid 1 buttonhighlight"
+				.borderRight = "solid 1 buttonshadow"
+			end with
+		case else
+			if (objUnknown.tagName = "IMG") then 
+				if objUnknown.parentElement.className = "coolOLBarButton" then
+					with objUnknown.style
+						.borderTop = "solid 1 buttonhighlight"
+						.borderBottom = "solid 1 buttonshadow"
+						.borderLeft = "solid 1 buttonhighlight"
+						.borderRight = "solid 1 buttonshadow"
+					end with
+				end if
+			end if
+    end select
+	set objUnknown = nothing
+end sub
+
+sub coolOLBarOnMouseOut
+	dim objUnknown
+	set objUnknown = window.event.srcElement
+	select case objUnknown.className
+		case "coolOLBarContainerButton"
+			with objUnknown.style
+				.paddingLeft = "2px"
+				.paddingBottom = "3px"
+				.borderBottom = "solid 1 buttonshadow"
+				.borderRight = "solid 1 buttonshadow"
+			end with
+		case "coolOLBarScrollButton"
+			objUnknown.style.border = "solid 1 buttonface"
+		case else
+			if (objUnknown.tagName = "IMG") then 
+				if objUnknown.parentElement.className = "coolOLBarButton" then
+					if selectedButton is objUnknown.parentElement then
+						objUnknown.style.border = "solid 1 highlight"
+					else
+						objUnknown.style.border = "solid 1 buttonface"
+					end if
+				end if
+			end if
+    end select
+	set objUnknown = nothing
+end sub
+
+sub coolOLBarOnMouseDown
+	dim objUnknown
+	set objUnknown = window.event.srcElement
+	select case objUnknown.className
+		case "coolOLBarContainerButton"
+			with objUnknown.style
+				.borderTop = "solid 1 buttonshadow"
+				.borderBottom = "inset 2 buttonhighlight"
+				.borderLeft = "solid 1 buttonshadow"
+				.borderRight = "inset 2 buttonhighlight"
+			end with
+		case "coolOLBarScrollButton"
+			with objUnknown.style
+				.borderTop = "solid 1 buttonshadow"
+				.borderBottom = "solid 1 buttonhighlight"
+				.borderLeft = "solid 1 buttonshadow"
+				.borderRight = "solid 1 buttonhighlight"
+			end with
+			if ucase(objUnknown.id) = "UPBUTTON" then
+				scrollUp getGroupButtonContainer(element.children(selectedGroup))
+			else
+				scrollDown getGroupButtonContainer(element.children(selectedGroup))
+			end if
+		case else
+			if (objUnknown.tagName = "IMG") then 
+				if objUnknown.parentElement.className = "coolOLBarButton" then
+					with objUnknown.style
+						.paddingTop = "3px"
+						.paddingBottom = "1px"
+						.paddingLeft = "3px"
+						.paddingRight = "1px"
+						.borderTop = "solid 1 buttonshadow"
+						.borderBottom = "solid 1 buttonhighlight"
+						.borderLeft = "solid 1 buttonshadow"
+						.borderRight = "solid 1 buttonhighlight"
+					end with
+				end if
+			end if
+    end select
+	set objUnknown = nothing
+end sub
+
+sub coolOLBarOnMouseUp
+	dim objUnknown
+	set objUnknown = window.event.srcElement
+	select case objUnknown.className
+		case "coolOLBarContainerButton"
+			with objUnknown.style
+				.borderTop = "solid 1 buttonhighlight"
+				.borderBottom = "solid 2 buttonshadow"
+				.borderLeft = "solid 1 buttonhighlight"
+				.borderRight = "solid 2 buttonshadow"
+			end with
+			if not blnSlidingGroup then preSlideContainers objUnknown
+		case "coolOLBarScrollButton"
+			window.clearTimeout(scrollTimer)
+			with objUnknown.style
+				.borderTop = "solid 1 buttonhighlight"
+				.borderBottom = "solid 1 buttonshadow"
+				.borderLeft = "solid 1 buttonhighlight"
+				.borderRight = "solid 1 buttonshadow"
+			end with
+		case else
+			if (objUnknown.tagName = "IMG") then 
+				if objUnknown.parentElement.className = "coolOLBarButton" then
+					with objUnknown.style
+						.paddingTop = "2px"
+						.paddingBottom = "2px"
+						.paddingLeft = "2px"
+						.paddingRight = "2px"
+						.borderTop = "solid 1 buttonhighlight"
+						.borderBottom = "solid 1 buttonshadow"
+						.borderLeft = "solid 1 buttonhighlight"
+						.borderRight = "solid 1 buttonshadow"
+					end with
+					setButtonStates objUnknown
+				end if
+			end if
+    end select
+	set objUnknown = nothing
+end sub
+
+sub scrollUp(objContainer)
+	set scrollContainer = objContainer
+	scrollDirection = "up"
+	scrollContainerObject
+end sub
+
+sub scrollDown(objContainer)
+	set scrollContainer = objContainer
+	scrollDirection = "down"
+	scrollContainerObject
+end sub
+
+sub coolOLBarOnResize
+	dim objUnknown
+	set objUnknown = getGroupButton(element.children(selectedGroup))
+	setContainerPositions objUnknown
+	set objUnknown = nothing
+end sub
+
+sub setOLBarBorder
+	select case element.borderStyle
+		case 0
+			style.border = ""	
+		case 1
+			style.border = "1 solid black"	
+		case 2
+			style.border = "1 inset window"	
+		case 3
+			style.border = "2 inset window"	
+	end select					
+end sub
+
+sub setButtonStates(objCurrentButton)
+	if not selectedButton is nothing then
+		with selectedButton.style
+			.background = "buttonface"
+			.color = "buttontext"
+			.border = "solid 1 buttonface"
+		end with
+	end if
+	with objCurrentButton.style
+		.background = "highlight"
+		.color = "highlighttext"
+		.border = "solid 1 highlight"
+	end with
+	set selectedButton = objCurrentButton
+end sub
+
+sub preSlideContainers(objUnknown)
+	blnSlidingGroup = true
+	set slideButton = objUnknown
+	set slideContainer = objUnknown.parentElement
+	slideGroup = getGroupIndex(slideContainer)
+	if slideGroup > selectedGroup then
+		with getGroupButton(element.children(selectedGroup))
+			slideToTop = .parentElement.offsetTop + .offsetTop + .offsetHeight
+		end with
+		slideDirection = "up"
+	elseif slideGroup < selectedGroup then
+		slideToTop = (element.offsetHeight - element.offsetTop - 2) - ((getGroupCount - (slideGroup + 1)) * (objUnknown.offsetHeight))
+		slideDirection = "down"
+	elseif slideGroup = selectedGroup then
+		blnSlidingGroup = false
+		exit sub
+	end if
+	setScrollButtonsDisplay false
+	slideAmountMultiplier = 0
+	slideContainers
+end sub
+
+dim slideTimer
+dim slideToTop
+dim slideButton
+dim slideContainer
+dim slideDirection
+dim slideGroup
+dim slideAmountMultiplier
+
+function slideContainers()
+	dim elTop, newTop, slideInterval, slideAmount, i
+	slideAmountMultiplier = slideAmountMultiplier + 1
+	slideInterval = 15 - slideAmountMultiplier
+	if slideInterval < 0 then slideInterval = 0
+	slideAmount = 1 + slideAmountMultiplier
+	if slideDirection = "up" then
+		if element.children(selectedGroup + 1).style.pixelTop - slideAmount <= slideToTop then
+			slideAmount = 1
+		end if
+		for i = selectedGroup + 1 to slideGroup
+			with element.children(i).style
+				.pixelTop = .pixelTop - slideAmount
+			end with
+		next
+		slideContainer.style.pixelHeight = slideContainer.style.pixelHeight + slideAmount
+		window.clearTimeout()
+		if element.children(selectedGroup + 1).style.pixelTop <= slideToTop then 
+			selectedGroup = slideGroup
+			checkScroll slideButton
+			set slideButton = nothing
+			set slideContainer = nothing
+			blnSlidingGroup = false
+			exit function
+		end if
+	else
+		if element.children(slideGroup + 1).style.pixelTop + slideAmount >= slideToTop then
+			slideAmount = 1
+		end if
+		for i = selectedGroup to slideGroup + 1 step -1
+			with element.children(i).style
+				.pixelTop = .pixelTop + slideAmount
+			end with
+		next
+		slideContainer.style.pixelHeight = slideContainer.style.pixelHeight + slideAmount
+		window.clearTimeout(slideTimer)
+		if element.children(slideGroup + 1).style.pixelTop >= slideToTop then
+			selectedGroup = slideGroup
+			checkScroll slideButton
+			set slideButton = nothing
+			set slideContainer = nothing
+			blnSlidingGroup = false
+			exit function
+		end if
+	end if
+	slideTimer = window.setTimeout(GetRef("slideContainers"), slideInterval)
+end function
+
+function checkScroll(objUnknown)
+	dim objParent
+	dim objNextParent
+	dim itemButtonContainer
+	dim nextParentTop
+	set objParent = objUnknown.parentElement
+	set objNextParent = element.children(selectedGroup + 1)
+	set itemButtonContainer = getGroupButtonContainer(objParent)
+	if not objNextParent is nothing then
+		if ucase(objNextParent.className) = ucase("coolOLBarContainer") then
+			nextParentTop = objNextParent.offsetTop
+		else
+			nextParentTop = element.offsetHeight - element.offsetTop
+		end if
+	else
+		nextParentTop = element.offsetHeight - element.offsetTop
+	end if
+	with objParent
+		.style.height = nextParentTop - .offsetTop
+		upButton.style.top = .offsetTop + objUnknown.offsetTop + objUnknown.offsetHeight + 3
+		downButton.style.top = nextParentTop - downButton.offsetHeight - 3
+		upButton.style.left = element.offsetLeft + element.offsetWidth - upButton.offsetWidth - 4
+		downButton.style.left = upButton.style.left
+		upButton.style.zindex = .style.zindex + 1
+		downButton.style.zindex = .style.zindex + 1
+		setScrollButtonsDisplay (itemButtonContainer.offsetHeight >= .offsetHeight)
+	end with
+	set itemButtonContainer = nothing
+	set objNextParent = nothing
+	set objParent = nothing
+end function
+
+function getGroupCount()
+	dim i
+	dim childItem
+	for each childItem in element.children
+		if ucase(childItem.className) = ucase("coolOLBarContainer") then i = i + 1
+	next
+	getGroupCount = i
+end function
+
+function getGroupIndex(objGroup)
+	dim i
+	for i = 0 to element.children.length - 1
+		if element.children(i) is objGroup then
+			getGroupIndex = i
+			exit function
+		end if
+	next
+	getGroupIndex = -1
+end function
+
+function getGroupButton(objGroup)
+	dim childItem
+	for each childItem in objGroup.children
+		if ucase(childItem.className) = ucase("coolOLBarContainerButton") then
+			set getGroupButton = childItem
+			exit function
+		end if
+	next
+	set getGroupButton = nothing
+end function
+
+function getGroupButtonSpacer(objGroup)
+	dim childItem
+	for each childItem in objGroup.children
+		if ucase(childItem.className) = ucase("coolOLBarButtonSpacer") then
+			set getGroupButtonSpacer = childItem
+			exit function
+		end if
+	next
+	set getGroupButtonSpacer = nothing
+end function
+
+function getGroupButtonContainer(objGroup)
+	dim childItem
+	for each childItem in objGroup.children
+		if ucase(childItem.className) = ucase("coolOLBarButtonContainer") then
+			set getGroupButtonContainer = childItem
+			exit function
+		end if
+	next
+	set getGroupButtonContainer = nothing
+end function
+
+sub setGroupPositions
+	dim i, h
+	dim elChild
+	dim posOffset
+	dim itemButton
+	dim itemButtonSpacer
+	dim itemButtonContainer
+	posOffset = element.offsetHeight - element.offsetTop - 2
+	if getGroupCount > 1 then
+		for i = element.children.length - 1 to 0 step -1
+			set elChild = element.children(i)
+			if ucase(elChild.className) = ucase("coolOLBarContainer") then
+				set itemButton = getGroupButton(elChild)
+				set itemButtonContainer = getGroupButtonContainer(elChild)
+				set itemButtonSpacer = getGroupButtonSpacer(itemButtonContainer)
+				h = itemButton.offsetHeight
+				if i = 0 then
+					itemButtonSpacer.style.height = h
+					elChild.style.height = posOffset - element.offsetTop
+				else
+					if not itemButton is nothing then
+						itemButtonSpacer.style.height = h
+						posOffset = (posOffset - h)
+						with elChild.style
+							.height = h + 1
+							.top = posOffset
+							.zIndex = i
+						end with
+					end if
+				end if
+				set itemButtonContainer = nothing
+				set itemButtonSpacer = nothing
+				set itemButton = nothing
+			end if
+			set elChild = nothing
+		next
+	end if
+end sub
+
+sub setContainerPositions(objCurrentContainer)
+	dim i, t, b, h
+	dim cTop
+	dim elChild
+	dim itemButton
+	dim itemButtonContainer
+	dim itemExpanded
+	dim itemExpandedButton
+	itemExpanded = false
+	cTop = element.offsetTop
+	for i = 0 to element.children.length - 1
+		set elChild = element.children(i)
+		if ucase(elChild.className) = ucase("coolOLBarContainer") then
+			set itemButton = getGroupButton(elChild)
+			set itemButtonContainer = getGroupButtonContainer(elChild)
+			if not itemButton is nothing then
+				if itemExpanded then
+					with itemButtonContainer.style
+						.clip = "rect(auto,auto,auto,auto)"
+						.pixelTop = 0
+					end with
+					h = itemButton.offsetHeight
+					with elChild.style
+						.top = cTop
+						.height = h + 1
+					end with
+					cTop = cTop + h
+				else
+					elChild.style.top = cTop
+					if objCurrentContainer.parentElement is elChild then
+						selectedGroup = i
+						itemExpanded = true
+						set itemExpandedButton = itemButton
+						with elChild
+							.style.height = element.offsetHeight - .style.posTop - (itemButton.offsetHeight * (getGroupCount - i - 1))
+							cTop = cTop + .offsetHeight - 2
+						end with
+						if not itemButtonContainer is nothing then
+							with itemButtonContainer
+								h = .offsetHeight
+								t = .style.pixelTop
+								b = .offsetTop + h > (cTop - (itemButton.offsetHeight * i) - (i + 1))
+							end with
+							if (h > itemButtonContainer.parentElement.clientHeight) then
+								if (t < 0 and not b) then 
+									setContainerBottom itemButtonContainer, 0
+								else
+									setContainerTop itemButtonContainer, t
+								end if
+							else
+								setContainerTop itemButtonContainer, 0
+							end if
+						end if
+					else
+						with itemButtonContainer.style
+							.clip = "rect(auto,auto,auto,auto)"
+							.pixelTop = 0
+						end with
+						h = itemButton.offsetHeight
+						with elChild.style
+							.height = h + 1
+						end with
+						cTop = cTop + h
+					end if
+				end if
+			end if
+			set itemButton = nothing
+			set itemButtonContainer = nothing
+		end if
+		set elChild = nothing
+	next
+	checkScroll itemExpandedButton
+	set itemExpandedButton = nothing
+end sub
+
+sub setScrollButtonsDisplay(blnDisplay)
+	select case blnDisplay
+		case true
+			upButton.style.visibility = "visible"	
+			downButton.style.visibility = "visible"	
+		case else
+			upButton.style.visibility = "hidden"	
+			downButton.style.visibility = "hidden"	
+	end select
+end sub
+
+sub setContainerTop(objContainer, y)
+	if (y <= 0) then
+		with objContainer
+			.style.pixelTop = y
+			.style.clip = "rect(" & -y & "," & .parentElement.clientWidth & "," & (.parentElement.clientHeight - y) & ",0)"
+		end with
+	end if
+end sub
+
+sub setContainerBottom(objContainer, y)
+	dim top
+	if (y >= 0) then
+		with objContainer
+			top = .offsetHeight - .parentElement.clientHeight - y
+			.style.pixelTop = -top
+			.style.clip = "rect(" & top & "," & .parentElement.clientWidth & "," & (.offsetHeight) & ",0)"
+		end with
+	end if
+end sub
+
+dim scrollTimer
+dim scrollContainer
+dim scrollDirection
+
+function scrollContainerObject()
+	dim top, oldTop, bottom, scrollInterval, scrollAmount
+	
+	scrollInterval = 15
+	scrollAmount = 3
+	oldTop = scrollContainer.style.pixelTop
+	if scrollDirection = "down" then
+		top = oldTop - scrollAmount
+	else
+		top = oldTop + scrollAmount
+	end if
+	bottom = scrollContainer.offsetHeight + top - scrollContainer.parentElement.clientHeight
+	
+	if (scrollDirection = "down" and bottom < 0) then
+		setContainerBottom scrollContainer, 0
+	elseif (scrollDirection = "up" and  top > 0) then
+		setContainerTop scrollContainer, 0
+	elseif ((top < scrollAmount and scrollDirection = "up") or (scrollDirection = "down" and bottom > -scrollAmount)) then
+		setContainerTop scrollContainer, top
+	end if
+	
+	window.clearTimeout(scrollTimer)
+	scrollTimer = window.setTimeout(GetRef("scrollContainerObject"), scrollInterval)
+end function
+
+</script>
+
+</PUBLIC:COMPONENT>

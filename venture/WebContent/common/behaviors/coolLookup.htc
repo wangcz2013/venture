@@ -1,0 +1,299 @@
+<PUBLIC:COMPONENT
+    lightWeight = true
+>
+
+<PUBLIC:DEFAULTS
+    contentEditable = false
+    tabStop = true
+/>
+
+<PUBLIC:attach event="ondocumentready" onevent="initCoolLookup()" />
+<PUBLIC:attach event="ondetach" onevent="cleanupCoolLookup()" />
+<PUBLIC:attach event="onpropertychange" onevent="coolLookupPropertyChange()" />
+<PUBLIC:attach event="onclick" onevent="coolLookupOnClick()" />
+
+<PUBLIC:property name="enabled" value=true />
+<PUBLIC:property name="btnEnabled" value=true />
+<PUBLIC:property name="txtEnabled" value=true />
+
+<PUBLIC:event name="onclick" id="click" />
+
+<script language="VBScript">
+
+' ----------------------------------------------------
+' IEWidgets: CoolLookup
+'                                                     
+' Copyright ©2002 Stedy Software and Systems          
+' Please see http://www.stedy.com for terms of use.   
+' ----------------------------------------------------
+
+option explicit
+
+dim btnCoolButton
+dim toggleValue
+dim offset_x
+dim offset_y
+dim drawState
+dim drawStateButton
+dim drawStateText
+dim onClickHolder
+dim innerHTMLHolder
+dim backgroundImageUrl
+
+sub initCoolLookup()
+	backgroundImageUrl = element.currentStyle.buttonBackgroundImageUrl
+	set btnCoolButton = insertButtonElement(element.currentStyle.buttonImageUrl)
+	if not btnCoolButton is nothing then
+		with btnCoolButton
+			.attachEvent "onmouseover", GetRef("lookupButtonOnMouseOver")	
+			.attachEvent "onmouseout", GetRef("lookupButtonOnMouseOut")	
+			.attachEvent "onmousedown", GetRef("lookupButtonOnMouseDown")	
+			.attachEvent "onmouseup", GetRef("lookupButtonOnMouseUp")	
+			.attachEvent "onclick", GetRef("lookupButtonOnClick")
+		end with
+	end if
+	attachEvent "onfocus", GetRef("coolLookupInputFocus")
+	if not btnEnabled then showButtonDisabled
+	if not txtEnabled then showTextDisabled
+	if not enabled then showDisabled
+end sub
+
+sub cleanupCoolLookup
+	if not btnCoolButton is nothing then
+		with btnCoolButton
+			.detachEvent "onmouseover", GetRef("lookupButtonOnMouseOver")	
+			.detachEvent "onmouseout", GetRef("lookupButtonOnMouseOut")	
+			.detachEvent "onmousedown", GetRef("lookupButtonOnMouseDown")	
+			.detachEvent "onmouseup", GetRef("lookupButtonOnMouseUp")	
+			.detachEvent "onclick", GetRef("lookupButtonOnClick")	
+		end with
+	end if
+	if not btnCoolButton is nothing then btnCoolButton.removeNode true
+	set btnCoolButton = nothing
+	detachEvent "onfocus", GetRef("coolLookupInputFocus")
+end sub
+
+sub initOffsets(el)
+    dim tElement
+    offset_x = 0
+    offset_y = 0
+	set tElement = el
+	do while (not tElement is nothing)
+		offset_y = offset_y + tElement.offsetTop - tElement.scrollTop
+		offset_x = offset_x + tElement.offsetLeft - tElement.scrollLeft
+		set tElement = tElement.offsetParent
+	loop
+	set tElement = nothing
+end sub
+
+function insertButtonElement(btnImage)
+	dim btnElement
+	set btnElement = offsetParent.document.createElement("SPAN")
+	set insertButtonElement = offsetParent.appendChild(btnElement)
+	with btnElement
+		.innerHTML = "<img src='" & btnImage & "' vspace='1'>"
+		with .style
+			.height = element.offsetHeight
+			.width  = element.offsetHeight
+			.backgroundColor = "buttonface"
+			.border = "1px solid buttonface"
+			.padding = "1px"
+			.marginTop = "1px"
+			.cursor = "hand"
+		end with
+	end with
+	set btnElement = nothing
+end function
+
+sub coolLookupInputFocus() 
+	if not enabled or not txtEnabled then
+		btnCoolButton.focus 
+		exit sub
+	end if
+	element.select()
+end sub
+
+function coolLookupOnClick
+	coolLookupOnClick = false
+end function
+
+sub lookupButtonOnMouseDown
+	if not enabled or not btnEnabled then exit sub
+	showPressed btnCoolButton.style
+end sub
+
+sub lookupButtonOnMouseUp
+	if not enabled or not btnEnabled then exit sub
+	showRaised btnCoolButton.style
+end sub
+
+sub lookupButtonOnMouseOut
+	if not enabled or not btnEnabled then exit sub
+	showNormal btnCoolButton.style
+end sub
+
+sub lookupButtonOnMouseOver
+	if not enabled or not btnEnabled then exit sub
+	showRaised btnCoolButton.style
+end sub
+
+sub lookupButtonOnClick
+	if not enabled or not btnEnabled then exit sub
+	click.fire
+end sub
+
+sub showButtonDisabled
+	if drawStateButton <> "DISABLED" then
+		with btnCoolButton
+			if isobject(.onclick) then
+				set onClickHolder = .onclick
+				set .onclick = nothing
+			end if
+			.runtimeStyle.cursor = "default"
+			drawStateButton = "DISABLED"
+			innerHTMLHolder = .innerHTML
+			.innerHTML =	"<span class='coolDisabled'><span class='coolDisabled'>" & innerHTMLHolder & "</span></span>"
+		end with
+	end if
+end sub
+
+sub showButtonEnabled
+	if drawStateButton = "DISABLED" then
+		with btnCoolButton
+			if isobject(onClickHolder) then
+				set .onclick = onClickHolder
+				set onClickHolder = nothing
+			end if
+			.runtimeStyle.cursor = .style.cursor
+			drawStateButton = "ENABLED"
+			.innerHTML = innerHTMLHolder
+		end with
+	end if
+end sub
+
+sub showTextDisabled
+	with element.runtimeStyle
+		.color = "graytext"
+		.cursor = "default"
+	end with
+end sub
+
+sub showTextEnabled
+	with element.runtimeStyle
+		.color = element.style.color
+		.cursor = element.style.cursor
+	end with
+end sub
+
+sub showDisabled
+	if drawState <> "DISABLED" then
+		if drawStateButton <> "DISABLED" then 
+			with btnCoolButton
+				if isobject(.onclick) then
+					set onClickHolder = .onclick
+					set .onclick = nothing
+				end if
+			end with
+		end if
+		with element.runtimeStyle
+			.color = "graytext"
+			.cursor = "default"
+		end with
+		with btnCoolButton
+			.runtimeStyle.cursor = "default"
+			if drawStateButton <> "DISABLED" then 
+				innerHTMLHolder = .innerHTML
+				.innerHTML = "<span class='coolDisabled'><span class='coolDisabled'>" & innerHTMLHolder & "</span></span>"
+			end if
+		end with
+		drawStateButton = "DISABLED"
+		drawStateText = "DISABLED"
+		drawState = "DISABLED"
+	end if
+end sub
+
+sub showEnabled
+	if drawState = "DISABLED" then
+		if drawStateButton = "DISABLED" then
+			if isobject(onClickHolder) then
+				set btnCoolButton.onclick = onClickHolder
+				set onClickHolder = nothing
+			end if
+		end if
+		with element.runtimeStyle
+			.color = element.style.color
+			.cursor = element.style.cursor
+		end with
+		with btnCoolButton
+			.runtimeStyle.cursor = .style.cursor
+			if drawStateButton = "DISABLED" then .innerHTML = innerHTMLHolder
+		end with
+		drawStateButton = "ENABLED"
+		drawStateText = "ENABLED"
+		drawState = "ENABLED"
+	end if
+end sub
+
+sub showRaised(elStyle)
+	with elStyle
+		.borderLeft   = "1px solid buttonhighlight"
+		.borderRight  = "1px solid buttonshadow"
+		.borderTop    = "1px solid buttonhighlight"
+		.borderBottom = "1px solid buttonshadow"
+		.paddingTop    = "1px"
+		.paddingLeft   = "1px"
+		.paddingBottom = "1px"
+		.paddingRight  = "1px"
+	end with
+end sub
+
+sub showPressed(elStyle)
+	with elStyle
+		.borderLeft   = "1px solid buttonshadow"
+		.borderRight  = "1px solid buttonhighlight"
+		.borderTop    = "1px solid buttonshadow"
+		.borderBottom = "1px solid buttonhighlight"
+		.paddingTop    = "2px"
+		.paddingLeft   = "2px"
+		.paddingBottom = "0px"
+		.paddingRight  = "0px"
+	end with
+end sub
+
+sub showNormal(elStyle)
+	with elStyle
+		.border = "1px solid buttonface"
+		.paddingTop    = "1px"
+		.paddingLeft   = "1px"
+		.paddingBottom = "1px"
+		.paddingRight  = "1px"
+	end with
+end sub
+
+sub coolLookupPropertyChange
+	if window.event.propertyName = "btnEnabled" then
+		if not enabled then
+			showButtonDisabled
+		else
+			showButtonEnabled
+		end if
+	end if
+	if window.event.propertyName = "txtEnabled" then
+		if not enabled then
+			showTextDisabled
+		else
+			showTextEnabled
+		end if
+	end if
+	if window.event.propertyName = "enabled" then
+		if not enabled then
+			showDisabled
+		else
+			showEnabled
+		end if
+	end if
+end sub
+
+</script>
+
+</PUBLIC:COMPONENT>

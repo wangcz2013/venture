@@ -1,0 +1,533 @@
+<PUBLIC:COMPONENT
+    lightWeight = true
+>
+
+<PUBLIC:DEFAULTS
+    contentEditable = false
+    tabStop = true
+/>
+
+<PUBLIC:attach event="ondocumentready" onevent="initCoolSelect()" />
+<PUBLIC:attach event="ondetach" onevent="cleanupCoolSelect()" />
+<PUBLIC:attach event="onclick" onevent="coolSelectOnClick()" />
+<PUBLIC:attach event="onpropertychange" onevent="coolSelectPropertyChange()" />
+
+<PUBLIC:property name="value" value="" />
+<PUBLIC:property name="enabled" value=true />
+<PUBLIC:property name="dropdownState" value=false />
+<PUBLIC:property name="ddOffsetX" value=0 />
+<PUBLIC:property name="ddOffsetY" value=0 />
+<PUBLIC:property name="ExStyle" value=false />
+
+<PUBLIC:method   name="hideDropdown" />
+<PUBLIC:method   name="hideDropdownEx" />
+<PUBLIC:method   name="fixDropDown" />
+
+<PUBLIC:event    name="onRowSelect" id="rowselect" />
+
+<script language="VBScript">
+
+' ----------------------------------------------------
+' IEWidgets: CoolSelect
+'                                                     
+' Copyright ©2002 Stedy Software and Systems          
+' Please see http://www.stedy.com for terms of use.   
+' ----------------------------------------------------
+
+option explicit
+
+dim childButton
+dim childDropdown
+dim toggleValue
+dim procRef
+dim procRefOver
+dim procRefOut
+dim offset_x
+dim offset_y
+dim drawState
+dim innerHTMLHolder
+dim selectedItem
+dim highlightedItem
+dim buttonContainerWidth
+
+sub initCoolSelect
+	dim savedID
+	dim savedClassName
+	dim savedHTML
+	toggleValue = false
+	set selectedItem = nothing
+	set highlightedItem = nothing
+	set procRef = GetRef("hideDropdownEx")
+	set procRefOver = GetRef("coolSelectDropdownOnMouseOver")
+	set procRefOut = GetRef("coolSelectDropdownOnMouseOut")
+	with window.document
+		set childButton = .getElementById(cstr(id & "Button"))
+		set childButton = insertButtonElement()
+		if not childButton is nothing then
+			with childButton
+				.attachEvent "onmouseover", GetRef("coolSelectButtonOnMouseOver")	
+				.attachEvent "onmouseout", GetRef("coolSelectButtonOnMouseOut")	
+				.attachEvent "onmousedown", GetRef("coolSelectButtonOnMouseDown")	
+				.attachEvent "onmouseup", GetRef("coolSelectButtonOnMouseUp")	
+				.attachEvent "onselectstart", GetRef("coolSelectOnSelect")
+			end with
+		end if
+		with .getElementById(cstr(id & "Dropdown"))
+			savedID = .id
+			savedClassName = .className
+			savedHTML = .innerHTML
+			.removeNode true
+		end with
+		set childDropdown = .createElement("DIV")
+		with childDropdown
+			.id = savedID
+			.className = savedClassName
+			.innerHTML = savedHTML
+		end with
+		.body.insertAdjacentElement "afterBegin", childDropdown
+	end with
+	with window
+		.attachEvent "onload", GetRef("actionOnLoad")
+	end with
+	attachEvent "onselectstart", GetRef("coolSelectOnSelect")
+	if not enabled then showDisabled
+end sub
+
+sub cleanupCoolSelect
+	with window
+		.detachEvent "onload", GetRef("actionOnLoad")
+	end with
+	if not childButton is nothing then
+		with childButton
+			.detachEvent "onmouseover", GetRef("coolSelectButtonOnMouseOver")	
+			.detachEvent "onmouseout", GetRef("coolSelectButtonOnMouseOut")	
+			.detachEvent "onmousedown", GetRef("coolSelectButtonOnMouseDown")	
+			.detachEvent "onmouseup", GetRef("coolSelectButtonOnMouseUp")	
+			.detachEvent "onselectstart", GetRef("coolSelectOnSelect")
+		end with
+	end if
+	detachEvent "onselectstart", GetRef("coolSelectOnSelect")
+	set procRef = nothing
+	set procRefOver = nothing
+	set procRefOut = nothing
+	if not childButton is nothing then childButton.removeNode true
+	set childButton = nothing
+	if not childDropdown is nothing then childDropdown.removeNode true
+	set childDropdown = nothing
+	set selectedItem = nothing
+end sub
+
+function insertButtonElement()
+	dim btnElement, btnContainer
+	set btnContainer = document.createElement("SPAN")
+	buttonContainerWidth = ((element.offsetHeight \ 4) * 3)
+	with btnContainer
+		with .style
+			.height = element.offsetHeight
+			.width  = buttonContainerWidth
+			.backgroundColor = "buttonface"
+			.borderTop = "1px solid buttonshadow"
+			.borderLeft = "1px solid buttonshadow"
+			.borderRight = "1px solid buttonshadow"
+			.borderBottom = "1px solid buttonshadow"
+			.margin = "0px"
+			.cursor = "hand"
+			.position = "relative"
+			.top = "-1px"
+			.left = "-1px"
+		end with
+	end with
+	element.offsetParent.insertAdjacentElement "beforeEnd", btnContainer
+	set btnElement = document.createElement("SPAN")
+	with btnElement
+		.innerText = "6"
+		with .style
+			.fontFamily = "webdings"
+			.fontSize = "6pt"
+			.height = "100%"
+			.width = "100%"
+			.lineHeight = element.currentStyle.fontSize
+			.backgroundColor = "buttonface"
+			.borderTop = "1px solid buttonface"
+			.borderLeft = "1px solid buttonface"
+			.borderRight = "1px solid buttonface"
+			.borderBottom = "1px solid buttonface"
+			.padding = element.currentStyle.paddingTop
+			.margin = "0px"
+			.cursor = "hand"
+			.textAlign = "center"
+		end with
+	end with
+	btnContainer.insertAdjacentElement "beforeEnd", btnElement
+	buttonContainerWidth = btnContainer.offsetWidth
+	set insertButtonElement = btnElement
+	set btnContainer = nothing
+	set btnElement = nothing
+end function
+
+sub actionOnLoad
+	element.style.textAlign = "left"
+	fixDropDown
+end sub
+
+function coolSelectOnSelect
+	with window.event
+		.cancelBubble = true
+		.returnValue = false
+	end with
+	coolSelectOnSelect = false
+end function
+
+sub fixDropDown()
+	dim childItem, elW
+	childDropdown.nowrap = true
+	childDropdown.style.textAlign = "left"
+	childDropdown.style.width = element.offsetWidth + buttonContainerWidth - 1
+	elW = childDropdown.offsetWidth - (childDropdown.offsetWidth - childDropdown.clientWidth) - 2
+	for each childItem in childDropdown.children
+		with childItem
+			.style.overflow = "hidden"
+			if not ExStyle then
+				.style.fontFamily = element.currentStyle.fontFamily
+				.style.fontSize = element.currentStyle.fontSize
+			end if
+			.style.textAlign = "left"
+			.nowrap = true
+			on error resume next
+			if .selected then
+				if err.number = 0 then
+					element.innerText = .innerText
+					element.value = .value
+					set selectedItem = childItem
+				end if
+			end if
+			if .className = "coolSelectItem" then
+				.style.width = elW
+			end if
+			if .children.length <> 0 then
+				.style.height = .children(0).offsetHeight + 2
+			else
+				.style.paddingLeft = "4px"
+			end if
+		end with
+	next
+end sub
+
+sub coolSelectOnClick
+	if not enabled then exit sub
+	select case toggleValue
+		case true
+			with childButton.style
+				.borderTop = "1px solid buttonface"
+				.borderLeft = "1px solid buttonface"
+				.borderRight = "1px solid buttonface"
+				.borderBottom = "1px solid buttonface"
+				.paddingTop = element.currentStyle.paddingTop
+				.paddingLeft = element.currentStyle.paddingTop
+				.paddingRight = element.currentStyle.paddingTop
+				.paddingBottom = element.currentStyle.paddingTop
+			end with
+			hideDropdown
+		case false
+			with childButton.style
+				.borderTop = "1px solid buttonshadow"
+				.borderLeft = "1px solid buttonshadow"
+				.borderRight = "1px solid buttonhighlight"
+				.borderBottom = "1px solid buttonhighlight"
+				.paddingTop = (cint(replace(element.currentStyle.paddingTop, "px", "")) + 1) & "px"
+				.paddingLeft = (cint(replace(element.currentStyle.paddingTop, "px", "")) + 1) & "px"
+				.paddingRight = (cint(replace(element.currentStyle.paddingTop, "px", "")) - 1) & "px"
+				.paddingBottom = (cint(replace(element.currentStyle.paddingTop, "px", "")) - 1) & "px"
+			end with
+			showDropdown
+			toggleValue = not toggleValue
+	end select
+end sub
+
+sub coolSelectButtonOnMouseOver
+	if toggleValue or not enabled then exit sub
+	with childButton.style
+		.borderTop = "1px solid buttonhighlight"
+		.borderLeft = "1px solid buttonhighlight"
+		.borderRight = "1px solid buttonshadow"
+		.borderBottom = "1px solid buttonshadow"
+	end with
+end sub
+
+sub coolSelectButtonOnMouseOut
+	if toggleValue or not enabled then exit sub
+	with childButton.style
+		.borderTop = "1px solid buttonface"
+		.borderLeft = "1px solid buttonface"
+		.borderRight = "1px solid buttonface"
+		.borderBottom = "1px solid buttonface"
+	end with
+end sub
+
+sub coolSelectButtonOnMouseDown
+	if not enabled then exit sub
+	with childButton.style
+		.borderTop = "1px solid buttonshadow"
+		.borderLeft = "1px solid buttonshadow"
+		.borderRight = "1px solid buttonhighlight"
+		.borderBottom = "1px solid buttonhighlight"
+		.paddingTop = (cint(replace(element.currentStyle.paddingTop, "px", "")) + 1) & "px"
+		.paddingLeft = (cint(replace(element.currentStyle.paddingTop, "px", "")) + 1) & "px"
+		.paddingRight = (cint(replace(element.currentStyle.paddingTop, "px", "")) - 1) & "px"
+		.paddingBottom = (cint(replace(element.currentStyle.paddingTop, "px", "")) - 1) & "px"
+	end with
+	if not toggleValue then showDropdown
+	toggleValue = not toggleValue
+end sub
+
+sub coolSelectButtonOnMouseUp
+	if toggleValue or not enabled then exit sub
+	with childButton.style
+		.borderTop = "1px solid buttonhighlight"
+		.borderLeft = "1px solid buttonhighlight"
+		.borderRight = "1px solid buttonshadow"
+		.borderBottom = "1px solid buttonshadow"
+		.paddingTop = element.currentStyle.paddingTop
+		.paddingLeft = element.currentStyle.paddingTop
+		.paddingRight = element.currentStyle.paddingTop
+		.paddingBottom = element.currentStyle.paddingTop
+	end with
+	hideDropdown
+end sub
+
+sub coolSelectDropdownOnMouseOver
+	dim el
+	set el = window.event.srcElement
+	if (el.tagName = "IMG") then
+		set el = el.parentElement
+	end if
+	if el.className = "coolSelectItem" then
+		if not highlightedItem is nothing then
+			with highlightedItem.style
+				.background = "window"
+				.color = "windowtext"
+			end with
+		end if
+		with el.style
+			.background = "highlight"
+			.color = "highlighttext"
+		end with
+		set highlightedItem = el
+	end if
+	set el = nothing
+end sub
+
+sub coolSelectDropdownOnMouseOut
+	dim toEl
+	set toEl = window.event.toElement
+	if not toEl is nothing then
+		if (toEl.tagName = "IMG") then
+			set toEl = toEl.parentElement
+		end if
+		if toEl.className <> "coolSelectItem" _
+		  and toEl.className <> "coolSelectDropDown" then
+			if not highlightedItem is nothing then
+				with highlightedItem.style
+					.background = "window"
+					.color = "windowtext"
+				end with
+			end if
+			if not selectedItem is nothing then
+				set highlightedItem = selectedItem
+				with selectedItem.style
+					.background = "highlight"
+					.color = "highlighttext"
+				end with
+			end if
+		end if
+	else
+		if not highlightedItem is nothing then
+			with highlightedItem.style
+				.background = "window"
+				.color = "windowtext"
+			end with
+		end if
+		if not selectedItem is nothing then
+			set highlightedItem = selectedItem
+			with selectedItem.style
+				.background = "highlight"
+				.color = "highlighttext"
+			end with
+		end if
+	end if
+	set toEl = nothing
+end sub
+
+sub showDisabled
+	if drawState <> "DISABLED" then
+		with element.runtimeStyle
+			.color = "graytext"
+		end with
+		with childButton
+			.runtimeStyle.cursor = "default"
+			drawState = "DISABLED"
+			innerHTMLHolder = .innerHTML
+			.innerHTML =	"<span class='coolDisabled'><span class='coolDisabled'>" & innerHTMLHolder & "</span></span>"
+		end with
+	end if
+end sub
+
+sub showEnabled
+	if drawState = "DISABLED" then
+		with element.runtimeStyle
+			.color = element.style.color
+		end with
+		with childButton
+			.runtimeStyle.cursor = .style.cursor
+			drawState = "ENABLED"
+			.innerHTML = innerHTMLHolder
+		end with
+	end if
+end sub
+
+sub initOffsets(el)
+   dim tElement
+   offset_x = 0
+   offset_y = 0
+	set tElement = el
+	do while (not tElement is nothing)
+		offset_y = offset_y + tElement.offsetTop - tElement.scrollTop
+		offset_x = offset_x + tElement.offsetLeft - tElement.scrollLeft
+		set tElement = tElement.offsetParent
+	loop
+	set tElement = nothing
+end sub
+
+sub showWindowObjects(bShow)
+	dim objSelect
+	dim colSelects
+	set colSelects = window.document.all.tags("SELECT")
+	for each objSelect in colSelects
+		with objSelect.style
+			if bShow then
+				if .visibility <> "visible" then .visibility = "visible"
+			else
+				if .visibility <> "hidden" then .visibility = "hidden"
+			end if
+		end with
+	next
+	set colSelects = nothing
+end sub
+
+sub showDropdown
+	if childDropdown is nothing then exit sub
+	initOffsets element
+	childDropdown.style.zIndex = 90
+	with childDropdown
+		.style.left = offset_x + ddOffsetX
+		if ((window.document.body.clientHeight - window.event.clientY) < .offsetHeight) then
+			.style.top = (offset_y - .offsetHeight) + ddOffsetY
+		else
+			.style.top = (offset_y + element.offsetHeight) + ddOffsetY
+		end if
+	end with
+	with window.document
+		.attachEvent "onmousedown", procRef
+	end with
+	with childDropdown
+		.attachEvent "onmouseover", procRefOver
+		.attachEvent "onmouseout", procRefOut
+	end with
+	showWindowObjects false
+	if not selectedItem is nothing then
+		set highlightedItem = selectedItem
+		with selectedItem.style
+			.background = "highlight"
+			.color = "highlighttext"
+		end with
+	end if
+	with childDropdown
+		.style.filter = "blendTrans(duration=0.50) progid:DXImageTransform.Microsoft.Shadow(color=#323232, direction=135, strength=3)"
+		.filters.blendTrans.apply()
+		.style.visibility = "visible"
+		.filters.blendTrans.play()
+	end with
+	dropdownState = true
+end sub
+
+sub hideDropdownEx
+	dim el
+	set el = window.event.srcElement
+	if el is childButton or el is element or el is childDropdown then exit sub
+	if childDropdown is nothing then exit sub
+	if (el.tagName = "IMG") then
+		set el = el.parentElement
+	end if
+	if (el.className = "coolSelectItem") then
+		element.innerText = el.innerText
+		element.value = el.value
+		set selectedItem = el
+		with el.style
+			.background = "window"
+			.color = "windowtext"
+		end with
+	end if
+	set el = nothing
+	with childButton.style
+		.borderTop = "1px solid buttonface"
+		.borderLeft = "1px solid buttonface"
+		.borderRight = "1px solid buttonface"
+		.borderBottom = "1px solid buttonface"
+		.paddingTop = element.currentStyle.paddingTop
+		.paddingLeft = element.currentStyle.paddingTop
+		.paddingRight = element.currentStyle.paddingTop
+		.paddingBottom = element.currentStyle.paddingTop
+	end with
+	childDropdown.style.visibility = "hidden"
+	showWindowObjects true
+	with window.document
+		.detachEvent "onmousedown", procRef
+	end with
+	with childDropdown
+		.detachEvent "onmouseover", procRefOver
+		.detachEvent "onmouseout", procRefOut
+	end with
+	element.dropdownState = false
+	toggleValue = false
+	'add by zengc
+	rowselect.fire
+end sub
+
+sub hideDropdown
+	if childDropdown is nothing then exit sub
+	with childButton.style
+		.borderTop = "1px solid buttonface"
+		.borderLeft = "1px solid buttonface"
+		.borderRight = "1px solid buttonface"
+		.borderBottom = "1px solid buttonface"
+		.paddingTop = element.currentStyle.paddingTop
+		.paddingLeft = element.currentStyle.paddingTop
+		.paddingRight = element.currentStyle.paddingTop
+		.paddingBottom = element.currentStyle.paddingTop
+	end with
+	childDropdown.style.visibility = "hidden"
+	showWindowObjects true
+	with window.document
+		.detachEvent "onmousedown", procRef
+	end with
+	with childDropdown
+		.detachEvent "onmouseover", procRefOver
+		.detachEvent "onmouseout", procRefOut
+	end with
+	element.dropdownState = false
+	toggleValue = false
+end sub
+
+sub coolSelectPropertyChange
+	if window.event.propertyName = "enabled" then
+		if not enabled then
+			showDisabled
+		else
+			showEnabled
+		end if
+	end if
+end sub
+
+</script>
+
+</PUBLIC:COMPONENT>

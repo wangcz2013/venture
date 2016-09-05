@@ -1,0 +1,1979 @@
+<PUBLIC:COMPONENT
+    lightWeight = true
+>
+
+<PUBLIC:DEFAULTS
+    contentEditable = false
+    tabStop = true
+/>
+
+<PUBLIC:attach	 event="oncontentready" onevent="initCoolUltraGrid()" />
+<PUBLIC:attach	 event="ondetach" onevent="cleanupCoolUltraGrid()" />
+<PUBLIC:attach	 event="onresize" onevent="elementOnResize()" />
+<PUBLIC:attach	 event="onselectstart" onevent="elementOnSelect()" />
+<PUBLIC:attach	 event="onpropertychange" onevent="elementOnPropertyChange()" />
+
+<PUBLIC:property name="borderStyle" value=0 />
+<PUBLIC:property name="altRowColor" value="" />
+<PUBLIC:property name="selectionStyle" value=2 />
+<PUBLIC:property name="selectedRowCount" value=0 />
+<PUBLIC:property name="selectedCellCount" value=0 />
+<PUBLIC:property name="editStyle" value="auto" />
+<PUBLIC:property name="rowCount" value=0 />
+<PUBLIC:property name="colCount" value=0 />
+
+<PUBLIC:method   name="getRowByPosition" />
+<PUBLIC:method   name="getRowByID" />
+<PUBLIC:method   name="getSelectedRow" />
+<PUBLIC:method   name="getSelectedCell" />
+<PUBLIC:method   name="sortAscending" />
+<PUBLIC:method   name="sortDescending" />
+<PUBLIC:method   name="removeColumn" />
+<PUBLIC:method   name="showFieldChooser" />
+<PUBLIC:method   name="doAction" />
+<PUBLIC:method   name="resetList" />
+<PUBLIC:method   name="beginEdit" />
+<PUBLIC:method   name="endEdit" />
+<PUBLIC:method   name="addRow" />
+<PUBLIC:method   name="deleteRowByPosition" />
+<PUBLIC:method   name="deleteRowByID" />
+<PUBLIC:method   name="deleteSelectedRows" />
+<PUBLIC:method   name="intShowEditObject" />
+<PUBLIC:method   name="intShowEditHeadObject" />
+<PUBLIC:method   name="intAddRow" />
+<PUBLIC:method   name="intDeleteRow" />
+
+<PUBLIC:event    name="onCellSelect" id="cellselect" />
+<PUBLIC:event    name="onCellDoubleClick" id="celldblclick" />
+<PUBLIC:event    name="onRowSelect" id="rowselect" />
+<PUBLIC:event    name="onRowDoubleClick" id="rowdblclick" />
+<PUBLIC:event    name="onRowCountChange" id="rowcountchange" />
+<PUBLIC:event    name="onRequestAddDialog" id="requestdialogadd" />
+
+<script language="VBScript">
+
+' ----------------------------------------------------
+' IEWidgets: CoolUltraGrid										  
+'																		  
+' Copyright ©2002 Stedy Software and Systems          
+' Please see http://www.stedy.com for terms of use.	  
+' ----------------------------------------------------
+
+option explicit
+
+dim ie6
+
+dim gridHead
+dim gridHeadRow
+dim gridBody
+
+dim hiBackgroundColor
+dim hiBorderColor
+dim transparentImageUrl
+dim sortNoneImageUrl
+dim sortUpImageUrl
+dim sortDownImageUrl
+dim posUpImageUrl
+dim posDownImageUrl
+dim sortAscImageUrl
+dim sortDesImageUrl
+dim editImageUrl
+dim addRowImageUrl
+dim delRowImageUrl
+dim delRowsImageUrl
+dim fieldChooserImageUrl
+
+dim elBorderWidth
+dim gridHeadHeight
+dim gridHeadWidth
+
+dim inDrag
+dim inSize
+dim inMenu
+dim inEdit
+dim hidingObject
+
+dim posOffset
+dim sizeStartPos
+dim iDragCounter
+dim dragHeadHitIndex
+
+dim currentObject
+dim cSelectedCells
+dim cSelectedRows
+
+dim objEditItem
+dim objEditHeadItem
+dim editProcRef
+
+dim objHeadMenu
+dim objBodyMenu
+dim mnuProcRef
+dim menuHeadIndex
+dim prevMenuHeadIndex
+
+dim objWindow
+
+dim objSizeItem
+
+dim objDragItem
+dim objDragToItem1
+dim objDragToItem2
+
+dim gridRowExtraSpan
+
+inDrag = false
+inSize = false
+inMenu = false
+inEdit = false
+hidingObject = false
+
+prevMenuHeadIndex = -1
+
+set currentObject = nothing
+
+set objHeadMenu = nothing
+set objBodyMenu = nothing
+set objWindow = nothing
+set objSizeItem = nothing
+set objDragItem = nothing
+set objDragToItem1 = nothing
+set objDragToItem2 = nothing
+set gridRowExtraSpan = nothing
+
+ie6 = (instr(window.navigator.appVersion, "MSIE 6.") <> 0)
+
+class clsSelectedObjects
+	dim colItems()
+	dim itemAdded
+	dim lastAddedItem
+	
+	private sub Class_Initialize
+		itemAdded = false
+		set lastAddedItem = nothing
+	end sub
+	
+	private sub Class_Terminate
+		dim i
+		if not itemAdded then exit sub
+		for i = lbound(colItems) to ubound(colItems)
+			set colItems(i) = nothing
+		next
+		set lastAddedItem = nothing
+	end Sub
+	
+	public property Get Count
+		if not itemAdded then
+			Count = 0
+		else
+			Count = ubound(colItems) + 1
+		end if
+	end property
+	
+	public property Get SelectedObject(index)
+		if not itemAdded then
+			set SelectedObject = nothing
+			exit property
+		end if
+		set SelectedObject = colItems(index)
+	end property
+
+	public property Get LastObject
+		if getItemIndex(lastAddedItem) <> -1 then
+			set LastObject = lastAddedItem
+		else
+			set LastObject = nothing
+		end if
+	end property
+
+	public property Get getObjects
+		getObjects = colItems
+	end property
+
+	public function QuerySelected(objUnknown)
+		QuerySelected = (getItemIndex(objUnknown) <> -1)
+	end function
+
+	sub setLastObject(vData)
+		set lastAddedItem = vData
+	end sub
+
+	public sub AddSingle(objUnknown)
+		redim colItems(0)
+		set colItems(ubound(colItems)) = objUnknown
+		itemAdded = true
+		set lastAddedItem = objUnknown
+	end sub
+
+	public sub Add(objUnknown)
+		if not itemAdded then
+			redim preserve colItems(0)
+		else
+			redim preserve colItems(ubound(colItems) + 1)
+		end if
+		set colItems(ubound(colItems)) = objUnknown
+		itemAdded = true
+		set lastAddedItem = objUnknown
+	end sub
+	
+	public sub Remove(objUnknown)
+		dim i
+		dim idx
+		idx = getItemIndex(objUnknown)
+		if idx <> -1 then
+			for i = idx to ubound(colItems) - 1
+				set colItems(i) = nothing
+				set colItems(i) = colItems(i + 1)
+			next
+			set colItems(ubound(colItems)) = nothing
+			if ubound(colItems) - 1 = -1 then itemAdded = false
+			redim preserve colItems(ubound(colItems) - 1)
+		end if
+	end sub
+
+	public sub removeAll
+		if not itemAdded then exit sub
+		dim i
+		for i = lbound(colItems) to ubound(colItems)
+			set colItems(i) = nothing
+		next
+		set lastAddedItem = nothing
+		redim colItems(-1)
+		itemAdded = false
+	end sub
+	
+	public function getItemIndex(objUnknown)
+		dim i
+		if not itemAdded then
+			getItemIndex = -1
+		exit function
+		end if
+		for i = lbound(colItems) to ubound(colItems)
+			if objUnknown is colItems(i) then
+				getItemIndex = i
+				exit function
+			end if
+		next
+		getItemIndex = -1
+	end function
+
+end class
+
+sub initCoolUltraGrid()
+	dim i, w
+	dim elChild
+	dim imgElement
+	
+	element.nowrap = true
+	
+	with element.currentStyle
+		hiBackgroundColor = .highlightBackgroundColor
+		hiBorderColor = .highlightBorderColor
+		transparentImageUrl = .transparentImageUrl
+		sortNoneImageUrl = .sortNoneImageUrl
+		posUpImageUrl = .posUpImageUrl
+		posDownImageUrl = .posDownImageUrl
+		sortUpImageUrl = .sortUpImageUrl
+		sortDownImageUrl = .sortDownImageUrl
+		sortAscImageUrl = .sortAscImageUrl
+		sortDesImageUrl = .sortDesImageUrl
+		editImageUrl = .editImageUrl
+		addRowImageUrl = .addRowImageUrl
+		delRowImageUrl = .delRowImageUrl
+		delRowsImageUrl = .delRowsImageUrl
+		fieldChooserImageUrl = .fieldChooserImageUrl
+	end with
+	
+	setTableBorder()
+
+	select case cint(selectionStyle)
+		case 0	
+			'no selection
+		case 1	
+			set cSelectedCells = new clsSelectedObjects
+		case 2	
+			set cSelectedRows = new clsSelectedObjects
+	end select
+		
+	set gridHead = getElement(element, "gridHead")
+	if gridHead is nothing then
+		msgbox "coolUltraGrid must have a gridHead!"
+		exit sub
+	end if
+	gridHead.align = "left"
+	gridHeadHeight = gridHead.offsetHeight
+	
+	set gridHeadRow = getElement(gridHead, "gridRow")
+	if gridHeadRow is nothing then
+		msgbox "coolUltraGrid gridHead must have a gridRow!"
+		exit sub
+	end if
+	with gridHeadRow
+		element.colCount = .children.length
+		.insertAdjacentElement "beforeEnd", .document.createElement("SPAN")
+		.innerHTML = replace(.innerHTML, "> <", "><")
+	end with
+	
+	set gridBody = getElement(element, "gridBody")
+	if gridBody is nothing then
+		msgbox "coolUltraGrid must have a gridBody!"
+		exit sub
+	end if
+	if getElement(gridBody, "gridRow") is nothing then
+		msgbox "coolUltraGrid gridBody must have at least one gridRow!"
+		exit sub
+	end if
+	with gridBody
+		element.rowCount = .children.length
+		.style.left = "0px"
+	end with
+	for each elChild in gridBody.children
+		if elChild.id <> "cellEdit" then
+			with elChild
+				if cint(selectionStyle) = 1 then .style.border = "none"
+				.innerHTML = replace(.innerHTML, "> <", "><")
+			end with
+		end if
+	next
+
+	initAdditionalElements()
+	
+	setRowColors()
+
+	with gridHeadRow
+		set gridRowExtraSpan = .children(.children.length - 2)
+		for i = 0 to .children.length - 3
+			set imgElement = document.createElement("IMG")
+			with imgElement
+				.src = sortNoneImageUrl
+				.id = "srtImg"
+				.width = 25
+				.height = 11
+			end with
+			with .children(i)
+				.insertAdjacentElement "beforeEnd", imgElement
+				on error resume next
+				if instr(.width, "%") <> 0 then
+					w = (cint(replace(.width, "%", ""))) / 100 * element.offsetWidth
+				else
+					w = .width
+				end if
+				.style.width = w
+				setColWidth i, .offsetWidth
+				gridHeadWidth = gridHeadWidth + .offsetWidth
+			end with
+			set imgElement = nothing
+		next
+	end with
+	
+	elementOnResize()
+	
+	set mnuProcRef = GetRef("parentWindowOnMouseDown")
+	set editProcRef = GetRef("editOnKeyDown")
+	
+	with gridHead
+		.attachEvent "onmousemove", GetRef("gridHeadOnMouseMove")	
+		.attachEvent "onmousedown", GetRef("gridHeadOnMouseDown")	
+		.attachEvent "onclick", GetRef("gridHeadOnClick")
+		.attachEvent "oncontextmenu", GetRef("gridHeadOnRightClick")
+	end with
+
+	with gridBody
+		.attachEvent "onscroll", GetRef("gridBodyOnScroll")	
+		.attachEvent "onmouseover", GetRef("gridBodyOnMouseOver")	
+		.attachEvent "onmouseout", GetRef("gridBodyOnMouseOut")	
+		.attachEvent "onclick", GetRef("gridBodyOnClick")
+		.attachEvent "ondblclick", GetRef("gridBodyOnDblClick")
+	end with
+	
+	with element
+		.attachEvent "onmousemove",GetRef("elementOnMouseMove")
+		.attachEvent "onmouseup",GetRef("elementOnMouseUp")
+	end with
+
+	gridHead.style.visibility = "visible"
+	gridBody.style.visibility = "visible"
+end sub
+
+sub cleanupCoolUltraGrid()
+	with gridHead
+		.detachEvent "onmousemove", GetRef("gridHeadOnMouseMove")	
+		.detachEvent "onmousedown", GetRef("gridHeadOnMouseDown")	
+		.detachEvent "onclick", GetRef("gridHeadOnClick")
+		.detachEvent "oncontextmenu", GetRef("gridHeadOnRightClick")
+	end with
+	with gridBody
+		.detachEvent "onscroll", GetRef("gridBodyOnScroll")	
+		.detachEvent "onmouseover", GetRef("gridBodyOnMouseOver")	
+		.detachEvent "onmouseout", GetRef("gridBodyOnMouseOut")	
+		.detachEvent "onclick", GetRef("gridBodyOnClick")
+		.detachEvent "ondblclick", GetRef("gridBodyOnDblClick")
+	end with
+	with element
+		.detachEvent "onmousemove",GetRef("elementOnMouseMove")
+		.detachEvent "onmouseup",GetRef("elementOnMouseUp")
+	end with
+	set mnuProcRef = nothing
+	set editProcRef = nothing
+	set gridHead = nothing
+	set gridHeadRow = nothing
+	set gridBody = nothing
+	set currentObject = nothing
+	set cSelectedCols = nothing
+	set cSelectedRows = nothing
+	if not objEditItem is nothing then objEditItem.removeNode true
+	set objEditItem = nothing
+	if not objEditHeadItem is nothing then objEditHeadItem.removeNode true
+	set objEditHeadItem = nothing
+	if not objSizeItem is nothing then objSizeItem.removeNode true
+	set objSizeItem = nothing
+	if not objDragItem is nothing then objDragItem.removeNode true
+	set objDragItem = nothing
+	if not objDragToItem1 is nothing then objDragToItem1.removeNode true
+	set objDragToItem1 = nothing
+	if not objDragToItem2 is nothing then objDragToItem2.removeNode true
+	set objDragToItem2 = nothing
+	if not objHeadMenu is nothing then objHeadMenu.removeNode true
+	set objHeadMenu = nothing
+	if not objBodyMenu is nothing then objBodyMenu.removeNode true
+	set objBodyMenu = nothing
+	if not objWindow is nothing then objWindow.removeNode true
+	set objWindow = nothing
+	if not gridRowExtraSpan is nothing then gridRowExtraSpan.removeNode true
+	set gridRowExtraSpan = nothing
+end sub
+
+
+'init functions
+
+sub initAdditionalElements()
+	dim txtHTML
+	set objEditItem = document.createElement("INPUT")
+	with objEditItem
+		.id = "cellEdit"
+		.className = "coolMask"
+		with .style
+			.position = "absolute"
+			.top = "-100px"
+			.left = "-100px"
+			.border = "1px solid buttonshadow"
+			.height = "0px"
+			.width = "0px"
+			.padding = "0px"
+			.paddingTop = "1px"
+			.paddingBottom = "1px"
+			.paddingLeft = "2px"
+			.margin = "0px"
+			.font = "menu"
+			.zIndex = 3000
+			.visibility = "hidden"
+		end with
+	end with
+	gridBody.insertAdjacentElement "beforeEnd", objEditItem
+	set objEditHeadItem = document.createElement("INPUT")
+	with objEditHeadItem
+		.id = "headCellEdit"
+		.className = "coolMask"
+		with .style
+			.position = "absolute"
+			.top = "-100px"
+			.left = "-100px"
+			.border = "1px solid buttonshadow"
+			.height = "0px"
+			.width = "0px"
+			.padding = "0px"
+			.paddingTop = "1px"
+			.paddingBottom = "1px"
+			.paddingLeft = "2px"
+			.margin = "0px"
+			.font = "menu"
+			.zIndex = 3000
+			.visibility = "hidden"
+		end with
+	end with
+	gridHeadRow.insertAdjacentElement "beforeEnd", objEditHeadItem
+	set objSizeItem = document.createElement("DIV")
+	with objSizeItem.style
+		.backgroundColor = "buttonshadow"
+		if ie6 then .cursor = "col-resize" else .cursor = "e-resize"
+		.position = "absolute"
+		.border = "outset 1px"
+		.width = "2px"
+		.zIndex = 3000
+		.visibility = "hidden"
+	end with
+	window.document.body.insertAdjacentElement "afterBegin", objSizeItem
+	set objDragItem = document.createElement("DIV")
+	with objDragItem.style
+		.font = "menu"
+		.backgroundColor = "buttonshadow"
+		.cursor = "hand"
+		.position = "absolute"
+		.filter = "progid:DXImageTransform.Microsoft.Alpha(style=0,opacity=45)"
+		.zIndex = 3001
+		.visibility = "hidden"
+	end with
+	window.document.body.insertAdjacentElement "afterBegin", objDragItem
+	set objDragToItem1 = document.createElement("DIV")
+	with objDragToItem1
+		.style.height = 9
+		.style.width  = 9
+		.innerHTML = "<img src='" & posDownImageUrl & "'>"
+		.style.backgroundColor = "transparent"
+		.style.position = "absolute"
+		.style.zIndex = 3000
+		.style.visibility = "hidden"
+	end with
+	window.document.body.insertAdjacentElement "afterBegin", objDragToItem1
+	set objDragToItem2 = document.createElement("DIV")
+	with objDragToItem2
+		.style.height = 9
+		.style.width  = 9
+		.innerHTML = "<img src='" & posUpImageUrl & "'>"
+		.style.backgroundColor = "transparent"
+		.style.position = "absolute"
+		.style.zIndex = 3000
+		.style.visibility = "hidden"
+	end with
+	window.document.body.insertAdjacentElement "afterBegin", objDragToItem2
+	set objHeadMenu = document.createElement("DIV")
+	txtHTML = "<div class=" & chr(34) & "coolMenuItem" & chr(34) & " style='padding-top: 1px;' onclick=" & chr(34) & "vbscript: " & element.id & ".sortAscending" & chr(34) & "><img src=" & chr(34) & sortAscImageUrl & chr(34) & " width=" & chr(34) & "16" & chr(34) & " height=" & chr(34) & "16" & chr(34) & ">ÉýÐòÅÅÐò</div>" _
+			& "<div class=" & chr(34) & "coolMenuItem" & chr(34) & " style='padding-top: 1px;' onclick=" & chr(34) & "vbscript: " & element.id & ".sortDescending" & chr(34) & "><img src=" & chr(34) & sortDesImageUrl & chr(34) & " width=" & chr(34) & "16" & chr(34) & " height=" & chr(34) & "16" & chr(34) & ">½µÐòÅÅÐò</div>" _
+			& "<div class=" & chr(34) & "coolMenuDivider" & chr(34) & "></div>" _
+			& "<div class=" & chr(34) & "coolMenuItem" & chr(34) & " style='padding-top: 1px;' onclick=" & chr(34) & "vbscript: " & element.id & ".intShowEditHeadObject" & chr(34) & "><img src=" & chr(34) & editImageUrl & chr(34) & " width=" & chr(34) & "16" & chr(34) & " height=" & chr(34) & "16" & chr(34) & ">ÖØÃüÃû</div>" _
+			& "<div class=" & chr(34) & "coolMenuDivider" & chr(34) & "></div>" _
+			& "<div class=" & chr(34) & "coolMenuItem" & chr(34) & " style='padding-top: 1px;' onclick=" & chr(34) & "vbscript: " & element.id & ".removeColumn" & chr(34) & "><img src=" & chr(34) & transparentImageUrl & chr(34) & " width=" & chr(34) & "16" & chr(34) & " height=" & chr(34) & "16" & chr(34) & ">Òþ²ØÁÐ</div>" _
+			& "<div class=" & chr(34) & "coolMenuItem" & chr(34) & " style='padding-top: 1px;' onclick=" & chr(34) & "vbscript: " & element.id & ".showFieldChooser" & chr(34) & "><img src=" & chr(34) & fieldChooserImageUrl & chr(34) & " width=" & chr(34) & "16" & chr(34) & " height=" & chr(34) & "16" & chr(34) & ">×Ö¶ÎÑ¡Ôñ...</div>"
+	with objHeadMenu
+		.className = "coolMenu"
+		.innerHTML = txtHTML
+	end with
+	window.document.body.insertAdjacentElement "afterBegin", objHeadMenu
+	set objBodyMenu = document.createElement("DIV")
+	txtHTML = "<div id=" & chr(34) & "mnuEditItem" & chr(34) & " class=" & chr(34) & "coolMenuItem" & chr(34) & " style='padding-top: 1px;' onclick=" & chr(34) & "vbscript: " & element.id & ".intShowEditObject" & chr(34) & "><img src=" & chr(34) & editImageUrl & chr(34) & " width=" & chr(34) & "16" & chr(34) & " height=" & chr(34) & "16" & chr(34) & ">Edit</div>" _
+			& "<div class=" & chr(34) & "coolMenuDivider" & chr(34) & "></div>" _
+			& "<div id=" & chr(34) & "mnuAddItem" & chr(34) & " class=" & chr(34) & "coolMenuItem" & chr(34) & " style='padding-top: 1px;' onclick=" & chr(34) & "vbscript: " & element.id & ".intAddRow" & chr(34) & "><img src=" & chr(34) & addRowImageUrl & chr(34) & " width=" & chr(34) & "16" & chr(34) & " height=" & chr(34) & "16" & chr(34) & ">Insert Row...</div>" _
+			& "<div id=" & chr(34) & "mnuDeleteItem" & chr(34) & " class=" & chr(34) & "coolMenuItem" & chr(34) & " style='padding-top: 1px;' onclick=" & chr(34) & "vbscript: " & element.id & ".intDeleteRow" & chr(34) & "><img src=" & chr(34) & delRowImageUrl & chr(34) & " width=" & chr(34) & "16" & chr(34) & " height=" & chr(34) & "16" & chr(34) & ">Delete Row</div>" _
+			& "<div id=" & chr(34) & "mnuDeleteItems" & chr(34) & " class=" & chr(34) & "coolMenuItem" & chr(34) & " style='padding-top: 1px;' onclick=" & chr(34) & "vbscript: " & element.id & ".deleteSelectedRows" & chr(34) & "><img src=" & chr(34) & delRowsImageUrl & chr(34) & " width=" & chr(34) & "16" & chr(34) & " height=" & chr(34) & "16" & chr(34) & ">Delete Selected Row(s)</div>"
+	with objBodyMenu
+		.className = "coolMenu"
+		.innerHTML = txtHTML
+	end with
+	window.document.body.insertAdjacentElement "afterBegin", objBodyMenu
+	set objWindow = document.createElement("DIV")
+	txtHTML = "<div class=" & chr(34) & "windowCaption" & chr(34) & " id=" & chr(34) & element.id & "_capText" & chr(34) & ">×Ö¶ÎÑ¡Ôñ</div><img class=" & chr(34) & "captionImage" & chr(34) & " src=" & chr(34) & fieldChooserImageUrl & chr(34) & " width=" & chr(34) & "16" & chr(34) & " height=" & chr(34) & "16" & chr(34) & ">" _
+			& "<span class=" & chr(34) & "captionButton" & chr(34) & " id=" & chr(34) & element.id & "_btnMin" & chr(34) & "><img></span>" _
+			& "<span class=" & chr(34) & "captionButton" & chr(34) & " id=" & chr(34) & element.id & "_btnMax" & chr(34) & "><img></span>" _
+			& "<span class=" & chr(34) & "captionButton" & chr(34) & " id=" & chr(34) & element.id & "_btnClose" & chr(34) & "><img></span>" _
+			& "<iframe class=" & chr(34) & "windowContent" & chr(34) & " id=" & chr(34) & element.id & "_winContent" & chr(34) & "></iframe>"
+	with objWindow
+		.id = element.id & "_fcWindow"
+		.className = "coolWindowEx"
+		.innerHTML = txtHTML
+		.style.visibility = "hidden"
+	end with
+	window.document.body.insertAdjacentElement "afterBegin", objWindow
+end sub
+
+
+'event routines
+
+function parentWindowOnMouseDown()
+	dim el, clk
+	if not window.event is nothing then
+		set el = window.event.srcElement
+		if not el is nothing then
+			if inEdit and el.id <> "cellEdit" and el.id <> "headCellEdit" then 
+				hidingObject = true
+				hideEditObject false
+				exit function
+			end if
+			if (el.tagName = "IMG") then
+				set el = el.parentElement
+			end if
+			if el.className = "coolMenuItem" then
+				hidingObject = false
+				set clk = el.onclick
+				if not clk is nothing then clk
+			end if
+		end if
+	end if
+	if inMenu then 
+		hidingObject = parentIsGrid(el)
+		hideMenu()
+		with window.event
+			.cancelBubble = true
+			.returnValue = false
+		end with
+		parentWindowOnMouseDown = false
+	else
+		hidingObject = false
+	end if
+	set el = nothing
+	set clk = nothing
+end function
+
+function elementOnSelect()
+	if inEdit then
+		with window.event
+			.cancelBubble = false
+			.returnValue = true
+		end with
+		elementOnSelect = true
+	else
+		with window.event
+			.cancelBubble = true
+			.returnValue = false
+		end with
+		elementOnSelect = false
+	end if
+end function
+
+function elementOnResize()
+	dim elClientHeight, elClientWidth
+	with element
+		elClientHeight = .clientHeight
+		elClientWidth = .clientWidth
+	end with
+	if elClientHeight < gridHeadHeight or elClientWidth < 1 then exit function
+	with gridBody
+		.style.height = elClientHeight - gridHeadHeight
+		.style.width = elClientWidth
+		gridHeadRow.style.marginLeft = - .scrollLeft
+	end with
+	setGridHeadWidth elClientHeight, elClientWidth, gridBody.clientHeight
+end function
+
+function elementOnMouseMove()
+	dim x, y
+	dim cliX, cliY
+	with window.event
+		.cancelBubble = true
+		.returnValue = false
+		cliX = .clientX
+		cliY = .clientY
+	end with
+	if (inSize and not objSizeItem is nothing) then
+		setOffsets x, y
+		if cliX > gridHeadRow.children(menuHeadIndex).offsetLeft + 15 + x then _
+			objSizeItem.style.posLeft = cliX - 1
+	elseif (inDrag and not objDragItem is nothing) then
+		if iDragCounter < 10 then 
+			iDragCounter = iDragCounter + 1
+			exit function
+		end if
+		with objDragItem
+			if (.style.visibility = "hidden") then .style.visibility = "visible"
+			.style.posLeft = cliX - (.offsetWidth / 2)
+			.style.posTop  = cliY - (.offsetHeight - 3)
+		end with
+		dragHeadHitIndex = hitTest(cliX, cliY)
+	end if
+end function
+
+function elementOnMouseUp()
+	dim sizeEndPos
+	if inSize then
+		inSize = false
+		sizeEndPos = objSizeItem.offsetLeft
+		objSizeItem.style.visibility = "hidden"
+		element.releaseCapture
+		sizeCol menuHeadIndex, sizeEndPos - sizeStartPos 
+	elseif inDrag then
+		inDrag = false
+		objDragItem.style.visibility = "hidden"
+		objDragToItem1.style.visibility = "hidden"
+		objDragToItem2.style.visibility = "hidden"
+		element.releasecapture
+		element.style.cursor = "default"
+		if iDragCounter < 10 then exit function
+		if dragHeadHitIndex <> -1 then moveCols menuHeadIndex, dragHeadHitIndex
+	end if
+end function
+
+sub elementOnPropertyChange
+	dim elChild, elChildChild
+	if window.event.propertyName = "editStyle" then
+		if inEdit then hideEditObject false
+	elseif window.event.propertyName = "selectionStyle" then
+		if inEdit then hideEditObject false
+		selectedCellCount = 0
+		selectedRowCount = 0
+		set cSelectedCells = nothing
+		set cSelectedRows = nothing
+		if cint(selectionStyle) = 0 then
+			'no selection
+		elseif cint(selectionStyle) = 1 then
+			set cSelectedCells = new clsSelectedObjects
+		elseif cint(selectionStyle) = 2 then
+			set cSelectedRows = new clsSelectedObjects
+		end if
+		for each elChild in gridBody.children
+			if elChild.id <> "cellEdit" then
+				with elChild
+					if cint(selectionStyle) = 0 then
+						.style.border = "1px solid window"
+					elseif cint(selectionStyle) = 1 then
+						.style.border = "none"
+					elseif cint(selectionStyle) = 2 then
+						.style.border = "1px solid window"
+					end if
+					for each elChildChild in elChild.children
+						with elChildChild
+							if cint(selectionStyle) = 0 then
+								.style.border = "none"
+								.runtimeStyle.color = ""
+								.runtimeStyle.backgroundColor = ""
+								if elChildChild is elChild.children(elChild.children.length - 1) then elChildChild.style.width = gridHeadRow.children(elChild.children.length - 1).offsetWidth - 2
+							elseif cint(selectionStyle) = 1 then
+								.style.border = "1px solid window"
+								.runtimeStyle.color = ""
+								.runtimeStyle.backgroundColor = ""
+								if elChildChild is elChild.children(elChild.children.length - 1) then elChildChild.style.width = gridHeadRow.children(elChild.children.length - 1).offsetWidth
+							elseif cint(selectionStyle) = 2 then
+								.style.border = "none"
+								.runtimeStyle.color = ""
+								.runtimeStyle.backgroundColor = ""
+								if elChildChild is elChild.children(elChild.children.length - 1) then elChildChild.style.width = gridHeadRow.children(elChild.children.length - 1).offsetWidth - 2
+							end if
+						end with
+					next
+				end with
+			end if
+		next
+		cellselect.fire
+		rowselect.fire
+		setRowColors()
+	end if
+end sub
+
+function gridHeadOnMouseMove()
+	dim ev, el, hitIndex, x, y
+	if inDrag or inSize or inMenu or inEdit then exit function
+	set ev = window.event
+	set el = ev.srcElement
+	do while (el.tagName <> "SPAN")
+		set el = el.parentElement
+	loop
+	if el.children.length = 0 then exit function
+	hitIndex = getElementIndex(el)
+	if hitIndex <> -1 then
+		if ev.offsetX >= gridHeadRow.children(hitIndex).offsetWidth - 3 then
+			if ie6 then el.style.cursor = "col-resize" else el.style.cursor = "e-resize"
+		else
+			el.style.cursor = "hand"
+		end if
+	end if
+	set ev = nothing	
+	set el = nothing	
+end function
+
+function gridHeadOnMouseDown()
+	dim el, x, y
+	dim cliX, cliY
+	if inMenu or inEdit then exit function
+	if hidingObject then
+		hidingObject = false
+		exit function
+	end if
+	with window.event
+		set el = .srcElement
+		cliX = .clientX
+		cliY = .clientY
+		.cancelBubble = true
+		.returnValue = false
+	end with
+	do while (el.tagName <> "SPAN")
+		set el = el.parentElement
+	loop
+	if inEdit and el.id <> "cellEdit" and el.id <> "headCellEdit" then hideEditObject false
+	if el.children.length = 0 then exit function
+	menuHeadIndex = getElementIndex(el)
+	if el.style.cursor = "col-resize" or el.style.cursor = "e-resize" then
+		inSize = true
+		sizeStartPos = cliX
+		element.setCapture
+		setOffsets x, y
+		with objSizeItem.style
+			.top = y
+			.height = element.offsetHeight
+			.left = cliX
+			if (.visibility = "hidden") then .visibility = "visible"
+		end with
+	else
+		if getVisibleCount() < 2 then exit function
+		inDrag = true
+		iDragCounter = 0
+		element.setcapture
+		element.style.cursor = "hand"
+		with objDragItem
+			.innerHTML = "<center>" & el.innerHTML & "</center>"
+			with .style
+				.color = el.currentStyle.color
+				.height = el.offsetHeight - 2
+				.width  = el.offsetWidth - 2
+			end with
+		end with
+	end if
+	set el = nothing
+end function
+
+function gridHeadOnClick()
+	dim el, sortIndex
+	if inMenu or inEdit then exit function
+	if hidingObject then
+		hidingObject = false
+		exit function
+	end if
+	set el = window.event.srcElement
+	do while (el.tagName <> "SPAN")
+		set el = el.parentElement
+	loop
+	with el
+		if .children.length = 0 then exit function
+		if .children(0).id <> "srtImg" then exit function
+		sortIndex = getElementIndex(el)
+		if instr(right(.children(0).src, instrrev(.children(0).src, "/")), right(sortDownImageUrl, instrrev(sortDownImageUrl, "/"))) <> 0 then
+			.children(0).src = sortUpImageUrl
+			sortTable sortIndex, "UP"
+		else
+			.children(0).src = sortDownImageUrl
+			sortTable sortIndex, "DOWN"
+		end if
+	end with
+	if prevMenuHeadIndex <> -1 and prevMenuHeadIndex <> sortIndex then
+		gridHeadRow.children(prevMenuHeadIndex).children(0).src = sortNoneImageUrl
+	end if
+	prevMenuHeadIndex = sortIndex
+	set el = nothing
+end function
+
+function gridHeadOnRightClick()
+	dim ev, el
+	if inEdit then exit function
+	set ev = window.event
+    with ev
+		set el = .srcElement
+		do while (el.tagName <> "SPAN")
+			set el = el.parentElement
+		loop
+		if el.children.length = 0 then exit function
+		menuHeadIndex = getElementIndex(el)
+		showMenu objHeadMenu, .clientX, .clientY
+		.cancelBubble = true
+		.returnValue = false
+	end with
+	gridHeadOnRightClick = false
+	set el = nothing
+	set ev = nothing
+end function
+
+function gridBodyOnScroll()
+	dim el
+	set el = window.event.srcElement
+	gridHeadRow.style.marginLeft = - el.scrollLeft
+	set el = nothing
+end function
+
+function gridBodyOnMouseOver()
+	dim el
+	if inMenu or inEdit then exit function
+	set el = window.event.srcElement
+	if cint(selectionStyle) = 0 then
+		'no selection
+	elseif cint(selectionStyle) = 1 then
+		if not cSelectedCells.QuerySelected(el) then
+			if (el.tagName = "SPAN") then setCurrentCell el
+		else
+			setCurrentCell nothing
+		end if
+	elseif cint(selectionStyle) = 2 then
+		if (el.tagName = "SPAN") then
+			set el = el.parentElement
+		end if
+		if not cSelectedRows.QuerySelected(el) then
+			if el.parentElement.className = "gridBody" then setCurrentRow el
+		else
+			setCurrentRow nothing
+		end if
+	end if
+	set el = nothing
+end function
+
+function gridBodyOnMouseOut()
+	if inMenu then exit function
+	if cint(selectionStyle) = 0 then
+		'no selection
+	elseif cint(selectionStyle) = 1 then
+		setCurrentCell nothing
+	elseif cint(selectionStyle) = 2 then
+		setCurrentRow nothing
+	end if
+end function
+
+dim menuCellIndex
+dim menuRowIndex
+function gridBodyOnRightClick()
+	dim ev, el
+	set ev = window.event
+    with ev
+		set el = .srcElement
+		if el.id = "cellEdit" then exit function
+		if el.parentElement is gridBody then set el = el.children(0)
+		if el.tagName <> "SPAN" then exit function
+		hidingObject = false
+		if cint(selectionStyle) = 0 then
+			set el = nothing
+			exit function
+		elseif cint(selectionStyle) = 1 then
+			if not cSelectedCells.QuerySelected(el) then gridBodyOnClick()
+			menuCellIndex = getElementIndex(el)
+			set el = el.parentElement
+			menuRowIndex = getElementIndex(el)
+			setCurrentCell nothing
+			mnuEditItem.enabled = true
+			mnuDeleteItem.enabled = false
+			mnuDeleteItems.enabled = false
+		elseif cint(selectionStyle) = 2 then
+			set el = el.parentElement
+			if not cSelectedRows.QuerySelected(el) then gridBodyOnClick()
+			menuRowIndex = getElementIndex(el)
+			setCurrentRow nothing
+			mnuEditItem.enabled = false
+			mnuDeleteItem.enabled = true
+			mnuDeleteItems.enabled = cbool(element.selectedRowCount > 1)
+		end if
+		showMenu objBodyMenu, .clientX, .clientY
+		.cancelBubble = true
+		.returnValue = false
+	end with
+	gridBodyOnRightClick = false
+	set el = nothing
+	set ev = nothing
+end function
+
+function gridBodyOnClick()
+	dim el, i, r, c, tElement
+	if hidingObject then
+		hidingObject = false
+		exit function
+	end if
+	set el = window.event.srcElement
+	if cint(selectionStyle) = 0 then
+		'no selection
+	elseif cint(selectionStyle) = 1 then
+		if el.tagName <> "SPAN" then exit function
+		if window.event.shiftKey then
+			dim lastCell
+			set lastCell = cSelectedCells.LastObject
+			if not lastCell is nothing then
+				dim startCell, endCell, startRow, endRow, saveIndex
+				startCell = getElementIndex(el)
+				endCell = getElementIndex(lastCell)
+				startRow = getElementIndex(el.parentElement)
+				endRow = getElementIndex(lastCell.parentElement)
+				if startCell > endCell then
+					saveIndex = startCell
+					startCell = endCell
+					endCell = saveIndex
+				end if	
+				if startRow > endRow then
+					saveIndex = startRow
+					startRow = endRow
+					endRow = saveIndex
+				end if
+				for r = startRow to endRow
+					with gridBody.children(r)
+						for c = startCell to endCell
+							setCellStyle .children(c), "highlighttext", "highlight", "highlight"
+							if not cSelectedCells.QuerySelected(.children(c)) then cSelectedCells.Add .children(c)
+						next
+					end with
+				next	
+				cSelectedCells.setLastObject el
+				set lastCell =  nothing
+				set currentObject = nothing
+			else
+				cSelectedRows.AddSingle el
+				setCellStyle el, "highlighttext", "highlight", "highlight"
+				set currentObject = nothing
+			end if
+		elseif window.event.ctrlKey then
+			if cSelectedCells.QuerySelected(el) then
+				cSelectedCells.Remove el
+				setCellStyle el, "windowtext", el.style.backgroundColor, el.parentElement.style.backgroundColor
+				setCurrentCell el
+			else
+				cSelectedCells.Add el
+				setCellStyle el, "highlighttext", "highlight", "highlight"
+				set currentObject = nothing
+			end if
+		else
+			if cSelectedCells.QuerySelected(el) then
+				if ucase(editStyle) = "AUTO" then showEditObject el
+				exit function
+			end if
+			if cSelectedCells.Count > 0 then
+				for i = 0 to cSelectedCells.Count - 1
+					set tElement = cSelectedCells.SelectedObject(i)
+					setCellStyle tElement, "windowtext", tElement.style.backgroundColor, tElement.parentElement.style.backgroundColor
+					set tElement = nothing
+				next
+			end if
+			cSelectedCells.AddSingle el
+			setCellStyle el, "highlighttext", "highlight", "highlight"
+			set currentObject = nothing
+		end if
+		selectedCellCount = cSelectedCells.Count
+		cellselect.fire
+	elseif cint(selectionStyle) = 2 then
+		if (el.tagName = "SPAN") then
+			set el = el.parentElement
+		end if
+		if el.parentElement.className <> "gridBody" then exit function
+		if window.event.shiftKey then
+			dim lastRow
+			set lastRow = cSelectedRows.LastObject
+			if not lastRow is nothing then
+				dim sIndex, lIndex, vIndex
+				sIndex = getElementIndex(el)
+				lIndex = getElementIndex(lastRow)
+				if sIndex > lIndex then
+					vIndex = sIndex
+					sIndex = lIndex
+					lIndex = vIndex
+				end if
+				for i = sIndex to lIndex
+					with gridBody
+						setRowStyle .children(i), "highlighttext", "highlight", "highlight"
+						if not cSelectedRows.QuerySelected(.children(i)) then cSelectedRows.Add .children(i)
+					end with
+				next
+				cSelectedRows.setLastObject el
+				set lastRow =  nothing
+				set currentObject = nothing
+			else
+				cSelectedRows.AddSingle el
+				setRowStyle el, "highlighttext", "highlight", "highlight"
+				set currentObject = nothing
+			end if
+		elseif window.event.ctrlKey then
+			if cSelectedRows.QuerySelected(el) then
+				cSelectedRows.Remove el
+				setRowStyle el, "windowtext", el.style.backgroundColor, el.style.backgroundColor
+				setCurrentRow el
+			else
+				cSelectedRows.Add el
+				setRowStyle el, "highlighttext", "highlight", "highlight"
+				set currentObject = nothing
+			end if
+		else
+			if cSelectedRows.Count > 0 then
+				for i = 0 to cSelectedRows.Count - 1
+					set tElement = cSelectedRows.SelectedObject(i)
+					setRowStyle tElement, "windowtext", tElement.style.backgroundColor, tElement.style.backgroundColor
+					set tElement = nothing
+				next
+			end if
+			cSelectedRows.AddSingle el
+			setRowStyle el, "highlighttext", "highlight", "highlight"
+			set currentObject = nothing
+		end if
+		selectedRowCount = cSelectedRows.Count
+		rowselect.fire
+	end if
+	set el = nothing
+end function
+
+function gridBodyOnDblClick()
+	gridBodyOnClick()
+	if cint(selectionStyle) = 0 then
+		'no selection
+	elseif cint(selectionStyle) = 1 then
+		celldblclick.fire
+	elseif cint(selectionStyle) = 2 then
+		rowdblclick.fire
+	end if
+end function
+
+function editOnKeyDown
+	with window.event
+		select case .keyCode
+			case 13		'enter key
+				hideEditObject true
+			case 27		'esc key
+				hideEditObject false
+		end select
+	end with
+end function
+
+
+'externally callable methods
+
+function getRowByPosition(idx)
+	set getRowByPosition = nothing
+	on error resume next
+	set getRowByPosition = gridHeadRow.children(idx)
+end function
+
+function getRowByID(id)
+	set getRowByID = nothing
+	on error resume next
+	set getRowByID = gridHeadRow.all(id)
+end function
+
+function getSelectedCell(idx)
+	set getSelectedCell = nothing
+	if cint(selectionStyle) = 1 then
+		set getSelectedCell = cSelectedCells.SelectedObject(idx)
+	end if
+end function
+
+function getSelectedRow(idx)
+	set getSelectedRow = nothing
+	if cint(selectionStyle) = 2 then
+		set getSelectedRow = cSelectedRows.SelectedObject(idx)
+	end if
+end function
+
+function intAddRow()
+	hideMenu()
+	requestdialogadd.fire
+end function
+
+function addRow(id, colArrray, pos)
+	dim i,strHTML, objRowItem, elChild
+	for i = lbound(colArrray) to ubound(colArrray)
+		strHTML = strHTML & "<span>" & colArrray(i) & "</span>"
+	next
+	set objRowItem = document.createElement("DIV")
+	with objRowItem
+		.id = id
+		.className = "gridRow"
+		.innerHTML = strHTML
+		with .style
+			.visibility = "hidden"
+		end with
+	end with
+	gridBody.insertAdjacentElement "beforeEnd", objRowItem
+	if pos = "" then
+		gridBody.insertBefore objRowItem, gridBody.children(gridBody.children.length - 2)
+	elseif pos = "atStart" then
+		gridBody.insertBefore objRowItem, gridBody.children(0)
+	elseif pos = "atEnd" then
+		gridBody.insertBefore objRowItem, gridBody.children(gridBody.children.length - 2)
+	elseif isNumeric(pos) then
+		gridBody.insertBefore objRowItem, gridBody.children(cint(pos) + 1)
+	else
+		gridBody.insertBefore objRowItem, gridBody.children(gridBody.children.length - 2)
+	end if
+	if cint(selectionStyle) = 0 then
+	elseif cint(selectionStyle) = 1 then
+		objRowItem.style.border = "none"
+	elseif cint(selectionStyle) = 2 then
+	end if
+	for i = 0 to gridHeadRow.children.length - 3
+		setColWidth i, cint(replace(gridHeadRow.children(i).style.width, "px", ""))
+		objRowItem.children(i).style.display = gridHeadRow.children(i).style.display
+	next
+	setRowColors()
+	objRowItem.style.visibility = "visible"
+	element.rowCount = gridBody.children.length - 1
+	set objRowItem = nothing
+	rowcountchange.fire
+end function
+
+function intDeleteRow()
+	deleteRowByPosition menuRowIndex
+end function
+
+function deleteRowByPosition(idx)
+	dim objUnknown
+	set objUnknown = gridBody.children(idx)
+	if not objUnknown is nothing then
+		deleteRowByID objUnknown.id
+	end if
+	set objUnknown = nothing
+	rowcountchange.fire
+end function
+
+function deleteRowByID(id)
+	dim objUnknown, elChild
+	set objUnknown = gridBody.all(id)
+	if not objUnknown is nothing then
+		if cint(selectionStyle) = 0 then
+			objUnknown.removeNode true
+			setRowColors()
+			element.rowCount = gridBody.children.length - 1
+		elseif cint(selectionStyle) = 1 then
+			for each elChild in objUnknown.children
+				if cSelectedCells.QuerySelected(elChild) then
+					cSelectedCells.Remove elChild
+					selectedCellCount = selectedCellCount - 1
+					cellselect.fire
+				end if
+			next
+			objUnknown.removeNode true
+			setRowColors()
+			element.rowCount = gridBody.children.length - 1
+		elseif cint(selectionStyle) = 2 then
+			if cSelectedRows.QuerySelected(objUnknown) then
+				cSelectedRows.Remove objUnknown
+				selectedRowCount = selectedRowCount - 1
+				'rowselect.fire
+			end if
+			objUnknown.removeNode true
+			setRowColors()
+			element.rowCount = gridBody.children.length - 1
+		end if
+	end if
+	set objUnknown = nothing
+	rowcountchange.fire
+end function
+
+function deleteSelectedRows()
+	dim i
+	if cint(selectionStyle) = 2 then
+		for i = lbound(cSelectedRows.colItems) to ubound(cSelectedRows.colItems)
+			if not cSelectedRows.colItems(i) is nothing then cSelectedRows.colItems(i).removeNode true
+		next
+		resetList()
+		rowselect.fire
+		element.rowCount = gridBody.children.length - 1
+	end if
+	rowcountchange.fire
+end function
+
+sub resetList()
+	if cint(selectionStyle) = 0 then
+		setRowColors()
+	elseif cint(selectionStyle) = 1 then
+		setRowColors()
+		cSelectedCells.removeAll
+		selectedCellCount = 0
+	elseif cint(selectionStyle) = 2 then
+		setRowColors()
+		cSelectedRows.removeAll
+		selectedRowCount = 0
+	end if
+end sub
+
+
+'get routines
+
+function getElement(el, strClassName)
+	dim elChild
+	for each elChild in el.children
+		if elChild.className = strClassName then
+			set getElement = elChild
+			exit function
+		end if
+	next
+	set getElement = nothing
+end function
+
+function getElementIndex(el)
+	dim i
+	with el
+		for i = 0 to .parentElement.children.length - 1
+			if el is .parentElement.children(i) then
+				getElementIndex = i
+				exit function
+			end if
+		next
+	end with
+end function
+
+function getGridRowWidth()
+	dim i
+	gridHeadWidth = 0
+	with gridHeadRow
+		for i = 0 to .children.length - 3
+			with .children(i)
+				if .style.display <> "none" then gridHeadWidth = gridHeadWidth + .offsetWidth
+			end with
+		next
+	end with
+end function
+
+function getVisibleCount()
+	dim i, count
+	count = 0
+	with gridHeadRow
+		for i = 0 to .children.length - 3
+			if .children(i).style.display <> "none" then
+				count = count + 1
+			end if
+		next
+	end with
+	getVisibleCount = count
+end function
+
+function parentIsGrid(el)
+	do while (not el is nothing)
+		set el = el.parentElement
+		if el is gridBody or el is gridHead then
+			parentIsGrid = true
+			exit function
+		end if
+	loop
+	parentIsGrid = false
+end function
+
+
+'set routines
+
+sub setTableBorder()
+	with element
+		select case .borderStyle
+			case 0
+				.style.border = ""
+				posOffSet = 3	
+			case 1
+				.style.border = "1 solid black"	
+				posOffSet = 4	
+			case 2
+				.style.borderLeft = "1 buttonshadow solid"	
+				.style.borderTop = "1 buttonshadow solid"	
+				.style.borderBottom = "1 buttonhighlight solid"	
+				.style.borderRight = "1 buttonhighlight solid"	
+				posOffSet = 4	
+			case 3
+				.style.border = "2 inset window"	
+				posOffSet = 5	
+		end select
+		elBorderWidth = (.offsetWidth - .clientWidth)
+	end with					
+end sub
+
+sub setGridHeadWidth(elClientHeight, elClientWidth, gridBodyClientHeight)
+	dim horScrollHeight
+	horScrollHeight = (elClientHeight - gridBodyClientHeight) - gridHeadHeight
+	if elClientWidth >= gridHeadWidth and horScrollHeight < 1 then
+		gridHeadRow.style.marginLeft = 0
+		gridBody.scrollLeft = 0
+		gridRowExtraSpan.style.width = elClientWidth - gridHeadWidth
+	else
+		gridRowExtraSpan.style.width = horScrollHeight + elBorderWidth
+	end if
+end sub
+
+sub setRowColors()	
+	dim i, elChild
+	if element.altRowColor <> "" then
+		for i = 0 to gridBody.children.length - 1
+			if gridBody.children(i).id <> "cellEdit" then
+				with gridBody.children(i).style
+					if ((i\2) * 2) = i then
+						.borderColor = element.altRowColor
+						.backgroundColor = element.altRowColor
+					else
+						.borderColor = "window"
+						.backgroundColor = "window"
+					end if
+					setRowStyle gridBody.children(i), "windowtext", .backgroundColor, .backgroundColor
+					if cint(selectionStyle) = 0 then
+						'no selection
+					elseif cint(selectionStyle) = 1 then
+						for each elChild in gridBody.children(i).children
+							if cSelectedCells.QuerySelected(elChild) then
+								setCellStyle elChild, "highlighttext", "highlight", "highlight"
+							else
+								setCellStyle elChild, "windowtext", .backgroundColor, .backgroundColor
+							end if
+						next
+					elseif cint(selectionStyle) = 2 then
+						if cSelectedRows.QuerySelected(gridBody.children(i)) then
+							setRowStyle gridBody.children(i), "highlighttext", "highlight", "highlight"
+						end if
+					end if
+				end with
+			end if
+		next
+	end if
+end sub
+
+sub setCurrentCell(el)
+	if not currentObject is nothing then
+		with currentObject
+			setCellStyle currentObject, "windowtext", .style.backgroundColor, .parentElement.runtimeStyle.backgroundColor
+		end with
+	end if
+	if not el is nothing then
+		setCellStyle el, "windowtext", hiBackgroundColor, hiBorderColor
+	end if
+	set currentObject = el
+end sub
+
+sub setCurrentRow(el)
+	if not currentObject is nothing then
+		with currentObject
+			setRowStyle currentObject, "windowtext", .style.backgroundColor, .style.backgroundColor
+		end with
+	end if
+	if not el is nothing then
+		setRowStyle el, "windowtext", hiBackgroundColor, hiBorderColor
+	end if
+	set currentObject = el
+end sub
+
+sub setCellStyle(objUnknown, fontColor, bgColor, borderColor)
+	with objUnknown
+		.style.borderColor = borderColor	
+		with .runtimeStyle
+			.color = fontColor
+			.backgroundColor = bgColor
+		end with
+	end with
+end sub
+
+sub setRowStyle(objUnknown, fontColor, bgColor, borderColor)
+	with objUnknown
+		.style.borderColor = borderColor	
+		with .runtimeStyle
+			.color = fontColor
+			.backgroundColor = bgColor
+		end with
+	end with
+end sub
+
+sub setColWidth(intCol, intWidth)
+	dim elChild
+	for each elChild in gridBody.children
+		if elChild.id <> "cellEdit" then
+			with elChild.children(intCol).style
+				if cint(selectionStyle) = 0 then
+					.border = "none"
+					if intCol = elChild.children.length - 1 then
+						.width = intWidth - 2
+					else
+						.width = intWidth
+					end if
+				elseif cint(selectionStyle) = 1 then 
+					if .borderWidth <> "1px" then
+						.borderWidth = "1px"
+						.borderStyle = "solid"
+						.borderColor = elChild.style.backgroundColor
+					end if
+					.width = intWidth
+				elseif cint(selectionStyle) = 2 then 
+					.border = "none"
+					if intCol = elChild.children.length - 1 then
+						.width = intWidth - 2
+					else
+						.width = intWidth
+					end if
+				end if
+			end with
+		end if
+	next
+end sub
+
+sub setOffsets(offsetX, offsetY)
+    dim el
+    set el = element
+	do while (not el is nothing)
+		offsetX = offsetX + el.offsetLeft - el.scrollLeft
+		offsetY = offsetY + el.offsetTop - el.scrollTop
+		set el = el.offsetParent
+	loop
+    set el = nothing
+end sub
+
+sub setElementOffsets(inElement, toElement, offsetX, offsetY)
+    dim el
+    set el = inElement
+	do while (not el is toElement)
+		offsetX = offsetX + el.offsetLeft - el.scrollLeft
+		offsetY = offsetY + el.offsetTop - el.scrollTop
+		set el = el.offsetParent
+	loop
+    set el = nothing
+end sub
+
+
+'menu routines
+
+sub showMenu(elMenu, x, y)
+	dim intRightEdge
+	dim intBottomEdge
+	dim intScrollLeft
+	dim intScrollTop
+	with parentElement.document.body	
+		intRightEdge = .clientWidth - x
+		intBottomEdge = .clientHeight - y
+		intScrollLeft = .scrollLeft + x
+		intScrollTop = .scrollTop + y
+	end with
+	with elMenu
+		if not .menuSized then .sizeMenu
+		if (intRightEdge < elMenu.offsetWidth) then
+			.style.left = intScrollLeft - .offsetWidth
+		else
+			.style.left = intScrollLeft
+		end if
+		if (intBottomEdge < elMenu.offsetHeight) then
+			.style.top = intScrollTop - .offsetHeight
+		else
+			.style.top = intScrollTop
+		end if
+		.style.zIndex = 50
+		.filters.blendTrans.apply()
+		.style.visibility = "visible"
+		.filters.blendTrans.play()
+	end with
+	inMenu = true
+	window.document.attachEvent "onmousedown", mnuProcRef
+end sub
+
+sub hideMenu()
+	window.document.detachEvent "onmousedown", mnuProcRef
+	objBodyMenu.style.visibility = "hidden"
+	objHeadMenu.style.visibility = "hidden"
+	inMenu = false
+end sub
+
+
+'col routines
+
+sub showColumn(iCol)
+	dim iRow
+	if iCol <> -1 then
+		gridHeadRow.children(iCol).style.display = ""
+		for iRow = 0 to gridBody.children.length - 1
+			with gridBody.children(iRow)
+				if .id <> "cellEdit" then
+					.children(iCol).style.display = ""
+				end if
+			end with
+		next
+	end if
+	getGridRowWidth()
+	elementOnResize()
+end sub
+
+sub removeColumn()
+	dim iRow
+	if getVisibleCount = 1 then
+		msgbox "You must have at least one column visible!", vbInformation, "Remove Column"
+		writeFieldChooserHTML()
+		exit sub
+	end if
+	gridHeadRow.children(menuHeadIndex).style.display = "none"
+	for iRow = 0 to gridBody.children.length - 1
+		with gridBody.children(iRow)
+			if .id <> "cellEdit" then
+				.children(menuHeadIndex).style.display = "none"
+			end if
+		end with
+	next
+	getGridRowWidth()
+	elementOnResize()
+end sub
+
+sub sizeCol(iCol, iAmount)
+	dim newWidth
+	with gridHeadRow.children(iCol)
+		newWidth = .offsetWidth + iAmount
+		.style.width =	newWidth
+		newWidth = .offsetWidth
+	end with
+	setColWidth iCol, newWidth
+	getGridRowWidth()
+	elementOnResize()
+end sub
+
+sub moveCols(fCol, tCol)
+	dim i
+	dim elTextSave
+	if fCol = tCol then exit sub
+	if prevMenuHeadIndex <> -1 then elTextSave = gridHeadRow.children(prevMenuHeadIndex).innerText
+	moveHeaderCols cint(fCol), cint(tCol)
+	for i = 0 to gridBody.children.length - 1
+		if gridBody.children(i).id <> "cellEdit" then
+			moveBodyCols i, cint(fCol), cint(tCol)
+		end if
+	next
+	for i = 0 to gridHeadRow.children.length - 3
+		if not elTextSave = "" then
+			if elTextSave = gridHeadRow.children(i).innerText then
+				prevMenuHeadIndex = i
+				elTextSave = ""
+			end if
+		end if
+	next
+	getGridRowWidth()
+	elementOnResize()
+end sub
+
+sub moveHeaderCols(fCol, tCol)
+	dim i, nCol, dCol
+	dim saveHTML, saveWidth
+	if fCol > tCol then
+		dCol = -1
+		nCol = fCol - tCol
+	else
+		dCol = 1
+		nCol = tCol - fCol
+	end if
+	with gridHeadRow.children(fCol)
+		saveHTML = .innerHTML
+		saveWidth = .offsetWidth
+	end with
+	for i = 0 to nCol - 1
+		with gridHeadRow
+			.children(fCol).innerHTML = .children(fCol + dCol).innerHTML
+			.children(fCol).style.width = .children(fCol + dCol).offsetWidth
+		end with
+		fCol = fCol + dCol
+	next
+	with gridHeadRow.children(tCol)
+		.innerHTML = saveHTML
+		.style.width = saveWidth
+	end with
+end sub
+
+sub moveBodyCols(iRow, fCol, tCol)
+	dim i, nCol, dCol, idx, isLast 
+	dim saveHTML, saveWidth, saveColor, saveBorder, saveIndex, isLastAddedObject
+	if fCol > tCol then
+		dCol = -1
+		nCol = fCol - tCol
+	else
+		dCol = 1
+		nCol = tCol - fCol
+	end if
+	with gridBody.children(iRow)
+		if cint(selectionStyle) = 1 then
+			isLastAddedObject = cbool(.children(fCol) is cSelectedCells.lastobject)
+			saveIndex = cSelectedCells.getItemIndex(.children(fCol))
+			if saveIndex <> -1 then set cSelectedCells.colItems(saveIndex) = nothing
+		end if
+		with .children(fCol)
+			saveColor = .runtimeStyle.backgroundColor
+			saveBorder = .style.border
+			saveHTML = .innerText
+			saveWidth = .offsetWidth
+		end with
+	end with
+	for i = 0 to nCol - 1
+		with gridBody.children(iRow)
+			if cint(selectionStyle) = 1 then
+				isLast =  cbool(.children(fCol + dCol) is cSelectedCells.lastobject)
+				idx = cSelectedCells.getItemIndex(.children(fCol + dCol))
+			end if
+			.children(fCol).runtimeStyle.backgroundColor = .children(fCol + dCol).runtimeStyle.backgroundColor
+			.children(fCol).style.border = .children(fCol + dCol).style.border
+			.children(fCol).innerText = .children(fCol + dCol).innerText
+			.children(fCol).style.width = .children(fCol + dCol).offsetWidth
+			if cint(selectionStyle) = 1 then
+				if idx <> -1 then set cSelectedCells.colItems(idx) = .children(fCol)
+				if isLast then cSelectedCells.setLastObject .children(fCol)
+			end if
+		end with
+		fCol = fCol + dCol
+	next
+	with gridBody.children(iRow)
+		if cint(selectionStyle) = 1 then
+			if saveIndex <> -1 then set cSelectedCells.colItems(saveIndex) = .children(tCol)
+			if isLastAddedObject then cSelectedCells.setLastObject .children(tCol)
+		end if
+		with .children(tCol)
+			.runtimeStyle.backgroundColor = saveColor
+			.style.border = saveBorder
+			.innerText = saveHTML
+			.style.width = saveWidth
+		end with
+	end with
+end sub
+
+
+'sort routines
+
+sub sortTable(iCol, currentSort)
+	dim i, s
+	dim strRowCurrent, strRowInsert
+	dim bReverse 
+	bReverse = (currentSort = "UP")
+	for i = 0 to gridBody.children.length - 1
+		if gridBody.children(i).id <> "cellEdit" then
+     		strRowInsert = lcase(gridBody.children(i).children(iCol).innerText)
+			if isnumeric(replace(strRowInsert, ".", "")) then strRowInsert = clng(replace(strRowInsert, ".", ""))
+			if isdate(strRowInsert) then strRowInsert = cdate(strRowInsert)
+			for s = 0 to i
+				strRowCurrent = lcase(gridBody.children(s).children(iCol).innerText)
+				if isnumeric(replace(strRowCurrent, ".", "")) then strRowCurrent = clng(replace(strRowCurrent, ".", ""))
+				if isdate(strRowCurrent) then strRowCurrent = cdate(strRowCurrent)
+				if (((not bReverse and strRowInsert < strRowCurrent) or _
+						 (bReverse and strRowInsert > strRowCurrent)) and _
+						 (i <> s)) then
+			        gridBody.insertBefore gridBody.children(i), gridBody.children(s)
+			        exit for
+			    end if
+			next
+		end if
+	next
+	setRowColors()
+end sub 
+
+sub sortAscending()
+	if prevMenuHeadIndex <> -1 then
+		gridHeadRow.children(prevMenuHeadIndex).children(0).src = sortNoneImageUrl
+	end if
+	gridHeadRow.children(menuHeadIndex).children(0).src = sortDownImageUrl
+	sortTable menuHeadIndex, "DOWN"
+	prevMenuHeadIndex = menuHeadIndex
+end sub
+
+sub sortDescending()
+	if prevMenuHeadIndex <> -1 then
+		gridHeadRow.children(prevMenuHeadIndex).children(0).src = sortNoneImageUrl
+	end if
+	gridHeadRow.children(menuHeadIndex).children(0).src = sortUpImageUrl
+	sortTable menuHeadIndex, "UP"
+	prevMenuHeadIndex = menuHeadIndex
+end sub
+
+
+'drag routines
+
+dim lastHeadIndex
+lastHeadIndex = -1
+sub hiliteHeader(headIndex, offset_x, offset_y)
+	dim o1Style, o2Style
+	if (headIndex = lastHeadIndex) then exit sub
+	set o1Style = objDragToItem1.style
+	set o2Style = objDragToItem2.style
+	if (headIndex = -1) then
+		if o1Style.visibility <> "hidden" then o1Style.visibility = "hidden"
+		if o2Style.visibility <> "hidden" then o2Style.visibility = "hidden"
+		if ie6 then
+			if element.style.cursor <> "no-drop" then element.style.cursor = "no-drop"
+		else
+			if element.style.cursor <> "wait" then element.style.cursor = "wait"
+		end if
+		lastHeadIndex = -1
+		set o1Style = nothing
+		set o2Style = nothing
+		exit sub
+	end if
+	if element.style.cursor <> "hand" then element.style.cursor = "hand"
+	if headIndex > gridHeadRow.children.length - 3 then
+		o1Style.posTop = offset_y - o1Style.posHeight
+		o1Style.posLeft = gridHeadRow.children(headIndex - 1).offsetLeft + gridHeadRow.children(headIndex - 1).offsetWidth - posOffset + offset_x + cint(replace(gridHeadRow.style.marginLeft, "px", ""))
+	else
+		o1Style.posTop = offset_y - o1Style.posHeight
+		o1Style.posLeft = gridHeadRow.children(headIndex).offsetLeft - posOffset + offset_x + cint(replace(gridHeadRow.style.marginLeft, "px", ""))
+	end if
+	o2Style.posTop = gridHeadRow.children(0).offsetHeight + offset_y
+	o2Style.posLeft = o1Style.posLeft
+	if o1Style.visibility <> "visible" then o1Style.visibility = "visible"
+	if o2Style.visibility <> "visible" then o2Style.visibility = "visible"
+	lastHeadIndex = headIndex
+	set o1Style = nothing
+	set o2Style = nothing
+end sub
+
+function hitTest(x, y)
+	dim i, iHit, offset_x, offset_y
+	setOffsets offset_x, offset_y
+	with gridHeadRow.children(0)
+		if y - offset_y > (.offsetTop + ((.offsetHeight - 3) * 2)) or y - offset_y < .offsetTop - 3 then
+			hiliteHeader -1, offset_x, offset_y
+			hitTest = -1
+			exit function
+		end if
+	end with
+	for i = 0 to gridHeadRow.children.length - 3
+		with gridHeadRow.children(i)
+			if x - offset_x > .offsetLeft + cint(replace(gridHeadRow.style.marginLeft, "px", "")) and x - offset_x < .offsetLeft + .offsetWidth + cint(replace(gridHeadRow.style.marginLeft, "px", "")) then
+				if x - offset_x <= .offsetLeft + cint(replace(gridHeadRow.style.marginLeft, "px", "")) + (.offsetWidth \ 2) then
+					hiliteHeader i, offset_x, offset_y
+					if menuHeadIndex > i then
+						iHit = i
+					elseif menuHeadIndex = i then
+						iHit = i
+					elseif menuHeadIndex < i then
+						iHit = i - 1
+					end if
+				elseif x - offset_x => .offsetLeft + cint(replace(gridHeadRow.style.marginLeft, "px", "")) + (.offsetWidth \ 2) then
+					hiliteHeader i + 1, offset_x, offset_y
+					if menuHeadIndex > i then
+						iHit = i + 1
+					elseif menuHeadIndex = i then
+						iHit = i
+					elseif menuHeadIndex < i then
+						iHit = i
+					end if
+				end if
+				if iHit < 0 then iHit = 0
+				if iHit > gridHeadRow.children.length - 3 then iHit = gridHeadRow.children.length - 3
+				hitTest = iHit
+				exit function
+			end if
+		end with
+	next
+	hitTest = -1
+end function
+
+
+'objEditItem routines
+
+function intShowEditObject()
+	showEditObject gridBody.children(menuRowIndex).children(menuCellIndex)
+end function
+
+dim currentEditCell
+sub showEditObject(el)
+	dim offset_x, offset_y
+	if el is nothing then set el = currentEditCell
+	if el is nothing then exit sub
+	setElementOffsets el, gridBody, offset_x, offset_y
+	with objEditItem
+		with .style
+			.left = offset_x
+			.top = offset_y
+			.height = el.offsetHeight
+			.width = el.offsetWidth
+			.visibility = "visible"
+		end with
+		set currentEditCell = el
+		inEdit = true
+		with element.document.all("cellEdit")
+			.realValue = el.innerText
+			.focus()
+			.select()
+		end with
+		with window.document
+			.attachEvent "onkeydown", editProcRef
+			.attachEvent "onmousedown", mnuProcRef
+		end with
+	end with
+end sub
+
+sub hideEditObject(blnReplaceValue)
+	with window.document
+		.detachEvent "onkeydown", editProcRef
+		.detachEvent "onmousedown", mnuProcRef
+	end with
+	if blnReplaceValue then
+		if not currentEditCell is nothing then
+			if objEditHeadItem.style.visibility <> "hidden" then
+				currentEditCell.innerHTML = replace(currentEditCell.innerHTML, currentEditCell.innerText, element.document.all("headCellEdit").value)
+			else
+				currentEditCell.innerText = element.document.all("cellEdit").value
+			end if
+		end if
+	end if
+	if objEditHeadItem.style.visibility <> "hidden" then
+		with objEditHeadItem.style
+			.visibility = "hidden"
+			.top = "-100px"
+			.left = "-100px"
+		end with
+	else
+		with objEditItem.style
+			.visibility = "hidden"
+			.top = "-100px"
+			.left = "-100px"
+		end with
+	end if
+	set currentEditCell = nothing
+	inEdit = false
+end sub
+
+sub beginEdit
+	if cint(selectionStyle) = 1 then
+		if not cSelectedCells.LastObject is nothing then
+			showEditObject cSelectedCells.LastObject
+		end if
+	end if
+end sub
+
+sub endEdit(blnReplaceValue)
+	if cint(selectionStyle) = 1 then
+		hideEditObject blnReplaceValue
+	end if
+end sub
+
+function intShowEditHeadObject()
+	dim el, offset_x, offset_y
+	set el = gridHeadRow.children(menuHeadIndex)
+	if el is nothing then exit function
+	setElementOffsets el, gridHeadRow, offset_x, offset_y
+	with objEditHeadItem
+		with .style
+			.left = offset_x
+			.top = offset_y
+			.height = el.offsetHeight
+			.width = el.offsetWidth
+			.visibility = "visible"
+		end with
+		set currentEditCell = el
+		inEdit = true
+		with element.document.all("headCellEdit")
+			.realValue = el.innerText
+			.focus()
+			.select()
+		end with
+		with window.document
+			.attachEvent "onkeydown", editProcRef
+			.attachEvent "onmousedown", mnuProcRef
+		end with
+	end with
+	set el = nothing
+end function
+
+
+'fieldChooser routines
+
+sub showFieldChooser()
+	writeFieldChooserHTML
+	with window.document.getElementById(element.id & "_fcWindow")
+		.left = objHeadMenu.offsetLeft
+		.top = objHeadMenu.offsetTop
+		.width = 150
+		.height = 170
+		.style.visibility = "visible"
+	end with
+end sub
+
+sub doAction(iCol)
+	if gridHeadRow.children(iCol).style.display = "none" then
+		showColumn iCol
+	else
+		menuHeadIndex = iCol
+		removeColumn
+	end if
+end sub
+
+function buildFieldChooserHTML()
+	dim i, windowHTML
+	windowHTML = "<html><head><title>×Ö¶ÎÑ¡Ôñ</title><style>body {padding: 0px; margin: 0px;} .small {font: menu;} </style></head><body>"
+	for i = 0 to gridHeadRow.children.length - 3
+		with gridHeadRow.children(i)
+			windowHTML = windowHTML & "<input type='checkbox' class='small' id='check_" & i & "' onclick='vbscript: parent." & element.id & ".doAction " & i & "'"
+			if cbool(.style.display <> "none") then
+				windowHTML = windowHTML & " checked=TRUE"
+			end if
+			windowHTML = windowHTML & "><label class='small' for='check_" & i & "'>" & replace(.innerText, " ", "&nbsp;") & "</label><br>"
+		end with
+	next
+	buildFieldChooserHTML = windowHTML & "</body></html>"
+end function
+
+sub writeFieldChooserHTML()
+	dim strHTML, winContentDoc
+	strHTML = buildFieldChooserHTML
+	set winContentDoc = window.document.getElementById(element.id & "_winContent")
+	with winContentDoc.contentWindow.document
+		.open()
+		.write strHTML
+		.close()
+	end with
+	set winContentDoc = nothing
+end sub
+
+</script>
+
+</PUBLIC:COMPONENT>

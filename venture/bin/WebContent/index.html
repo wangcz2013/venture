@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html;charset=utf-8">
+    <title>ROP跨域测试</title>
+    <script src="http://libs.baidu.com/jquery/2.1.4/jquery.min.js"></script>
+    <script src="jquery.encoding.js"></script>
+    <script type="text/javascript">
+    $(function(){
+        $("#logonBtn").click(function(){
+        	var separationMain="separationMain={\"businessType\":\""+$('#businessType').val()+"\",\n"+
+				"\"expenseType\":\""+$('#costType').val()+"\",\n"+
+				"\"businessKey\":\""+$('#businessKey').val()+"\",\n"+
+				"\"policyNo\":\""+$('#policyNo').val()+"\",\n"+
+				"\"homeOrgCode\":\""+$('#homeOrgCode').val()+"\",\n"+
+				"\"insuranceSign\":\""+$('#insuranceSign').val()+"\",\n"+
+				"\"firstChannelCode\":\""+$('#firstChannelCode').val()+"\",\n"+
+				"\"twoChannelCode\":\""+$('#twoChannelCode').val()+"\",\n"+
+				"\"requestTime\":\""+$('#requestTime').val()+"\",\n"+
+				"\"businessState\":\""+$('#businessState').val()+"\",\n"+
+				"\"clientAcc\":\""+$('#clientAcc').val()+"\",\n"+
+				"\"taxpayerName\":\""+$('#taxpayerName').val()+"\",\n"+
+				"\"taxpayerType\":\""+$('#taxpayerType').val()+"\",\n"+
+				"\"tranDate\":\""+$('#tranDate').val()+"\",\n"+
+				"\"valiDate\":\""+$('#valiDate').val()+"\",\n"+
+				"\"separationDetaileds\":[{\"itemKey\":\""+$('#itemKey').val()+"\",\n\"insuranceActuarialCode\":\""+$('#insuranceActuarialCode').val()+"\",\n\"insuranceCode\":\""+$('#insuranceCode').val()+"\",\n\"insuranceName\":\""+$('#insuranceName').val()+"\",\n\"costType\":\""+$('#costType').val()+"\",\n\"preTaxAmount\":\""+$('#preTaxAmount').val()+"\",\n\"flag\":\""+$('#flag').val()+"\"\n}]}";
+	
+			var data = separationMain+"&v=1.0&method=tax.searation&messageFormat=json&appKey="+$('#appKey').val()+"&locale=zh_CN";
+            $.get($("#routerUrl").val(),data,function(data,textStatus){
+                $("#result").html("");
+                $("#result").fadeOut();
+                var date = (new Date());
+                var time = date.getHours()+":"+date.getMinutes()+":"+date.getSeconds();
+                $("#result").html("<b>time:</b>"+time+ "<br/>"+
+                                  "<b>data:</b><br/>"+ JSON.stringify(data));
+                $("#result").fadeIn();
+            });
+        });
+    })
+    </script>
+    <style type="text/css">
+         input[type=text]{width: 500px;}
+         input[type=button]{width: 100px;}
+    </style>
+</head>
+<body>
+   基础设置
+   <hr/>
+   <div>                                                    
+      1.router url:<input id="routerUrl" type="text" value="http://10.132.2.139:8080/tax-vat/router"/> <br/>
+      2.appkey:<input id="appKey" type="text" value="30"/>   <br/>
+      3.secret:<input id="secret" type="text" value="abcdeabcdeabcdeabcdeaaaaa"/>    <br/>
+   </div>
+   <br/>
+   登录测试：
+   <hr/>
+     1.用户名：<input id="userName" type="text" value="tomson"/><br/>
+     2.密码：<input id="password" type="text" value="123456"/><br/>
+      <h4>页面测试</h4> 
+  <form action="jquery.encoding.js"  method=post >
+  <h4>费用主信息</h4>
+ 业务类型<input type="" id="businessType" value="1">业务主键<input type="" id="businessKey" value="10001003">
+ 保单号 <input type="" id="policyNo" value="2016061600299"></br>归属机构代码 <input type="" id="homeOrgCode" value="440100">个、团险标志<input type="" id="insuranceSign" value="2">
+ 一级渠道代码<input type="" id="firstChannelCode" value="1001220"></br>二级渠道代码 <input type="" id="twoChannelCode" value="1001220100">申请时间<input type="" id="requestTime" value="2016-06-23 1212:00:00">
+ 业务状态<input type="" id="businessState" value="1">客户编码<input type="" id="clientAcc" value="20001"></br>客户纳税人名称<input type="" id="taxpayerName" value="测试公司">
+ 纳税资质<input type="" id="taxpayerType" value="1">收费确认日期<input type="" id="tranDate" value="2016-06-23">
+ 生效日期<input type="" id="valiDate" value="2016-06-23">
+ <h4>明细信息</h4>
+ 收费项目主键<input type="" id="itemKey" value="11111">险种精算代码<input type="" id="insuranceActuarialCode" value="10911002"></br>
+ 险种内部代码 <input type="" id="insuranceCode" value="0010">险种名称<input type="" id="insuranceName" value="测试险种"></br>
+ 费用类型<input type="" id="costType" value="F41">税前金额<input type="" id="preTaxAmount" value="100.00"></br>
+减保标志<input type="" id="flag" value="1">
+  </form> 
+   请求结果： <div id="result" style="background-color: #EFEFEF"></div>
+   <input id="logonBtn" type="button" value="提交"/>申请时间默认为错误格式，返回“参数separationMain.requestTime无效，格式不对、非法值、越界等”信息则为联通
+</body>
+</html>

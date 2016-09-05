@@ -1,0 +1,137 @@
+/*
+文件名称:Project.css
+文件功能:定义江泰系统浏览器版的标准页面样式
+最近更新人:朱向峰
+最近更新日期:2003-6-25 13:43
+*/
+
+/*--BODY的样式--*/
+body{margin-top: 0px;font-size:9pt;}
+
+/*--TABLE的样式--*/
+table.common{width: 98%;font-size: 9pt;}
+
+table.three{width: 70%;font-size: 9pt}
+
+table.two{width: 60%;font-size: 9pt}
+
+table.menu{width: 100%;font-size: 9pt}
+
+table.sub{width: 95%;font-size:9pt}
+
+table.tableGrid{width: 98%;background-color: #9999CC;}
+
+/*--TD的样式--*/
+td.common{font-size: 9pt;  }
+
+td.itemcode{font-size: 12px;}
+
+td.input{font-size: 9pt;color:  black;width: 35%;background-color: #f0f5ff;text-align:left;}
+
+td.input2{font-size: 9pt;width: 35%;background-color: #E9EEF5;}
+
+td.formtitle{font-size: 9pt;font-weight: bold;background-color: #4D457A;text-align: center;color: #ffffff;}
+
+td.titleImg{font-weight: bold;text-align: left;font-size: 9pt;width: 15%;}
+
+td.title{background-color: #E9EEF5;text-align: left;color: black;font-size: 9pt;width: 15%;}
+
+td.titlenbsp{text-align: left;font-size: 9pt;width: 15%;}
+
+td.titles{background-color: #CCC8E0;text-align: left;font-size: 9pt;width: 20%;}
+
+td.subformtitle{background-color: #CCC8E0;text-align: left;}
+
+td.centertitle{background-color: #EEECFA;text-align: center;}
+
+td.text{background-color: #EEECFA;}
+
+td.titlesoap{background-color: #D0E3F7;text-align: left;font-size: 9pt;width: 12%;}
+
+td.inputsoap{font-size: 9pt;width: 21%;background-color: #E9EEF5;text-align:left;}
+
+td.tdGrid{text-align:center;color:#000000;font-size:9pt}
+
+td.tdGridBack{text-align:center;background-color:#FFFFFF;color:#000000;	font-size:9pt}
+
+td.tdGridFront{	text-align:center;background-color:#F4F4FF;color:#000000;font-size:9pt}
+
+/*--TR的样式--*/
+tr.listtitle{background-color: #4D457A;text-align: center;color: #ffffff;}
+
+tr.listodd{background-color: #CCC8E0;text-align: center;color: #800080;}
+
+tr.listeven{background-color: #EEECFA;text-align: center;color: #800080;}
+
+tr.trTitle{text-align:center;height:30px;background-color:#9cceff;color:#000000;font-size:9pt}
+
+tr.trGrid{text-align:center;height:24px;background-color:#FFFFFF;color:#000000;	font-size:9pt}
+
+tr.trGridBack{text-align:center;height:24px;background-color:#FFFFFF;color:#000000;font-size:9pt}
+
+tr.trGridFront{text-align:center;height:24px;background-color:#F3F3F3;color:#000000;font-size:9pt}
+
+/*--INPUT的样式--*/
+input{font-size: 9pt}
+
+input.common{color: black;background-color: #f6ffff;border: 1px #9999CC solid;height: 20px;width: 82%;border-left-style:inset; border-right-style:groove ;border-top-style:inset; border-bottom-style:groove  ; }
+input.hcommon{color: black;background-color: #fFffff;border: 1px #9999CC solid;height: 20px;width: 82%;border-left-style:inset; border-right-style:groove ;border-top-style:inset; border-bottom-style:groove  ; }
+
+input.commonverify{border: 1px #9999CC solid;COLOR: #ff0000;height: 20px;width: 82%;}
+
+input.commondate{border: 1px #9999CC solid;height: 20px;width: 65%;background-color: #f6ffff;border-left-style:inset; border-right-style:groove ;border-top-style:inset; border-bottom-style:groove  ;}
+input.hcommondate{border: 1px #9999CC solid;height: 20px;width: 65%;background-color: #fFffff;border-left-style:inset; border-right-style:groove ;border-top-style:inset; border-bottom-style:groove  ;}
+
+input.code{color:  black;background-color: #ebf0ff;border: 1px #9999CC solid;border-left-style:groove; border-right-style:solid ;border-top-style:groove; border-bottom-style:solid   ;height: 20px;width: 82%;}
+input.hcode{color:  black;background-color: #fFffff;border: 1px #9999CC solid;border-left-style:groove; border-right-style:solid ;border-top-style:groove; border-bottom-style:solid   ;height: 20px;width: 82%;}
+
+input.codeno{color:  black;background-color: #ebf0ff;border: 1px #9999CC solid;height: 20px;width:30%;  border-left-style:groove ; border-right-style:solid ;border-top-style:groove ; border-bottom-style:solid  ;}
+input.hcodeno{color:  black;background-color: #fFffff;border: 1px #9999CC solid;height: 20px;width:30%;  border-left-style:groove ; border-right-style:solid ;border-top-style:groove ; border-bottom-style:solid  ;}
+
+
+input.codename{color:  black;background-color:  #f6ffff;border: 1px #9999CC solid;height: 20px;width:50%; border-left-style:inset; border-right-style:groove ;border-top-style:inset; border-bottom-style:groove  ;}
+input.hcodename{color:  black;background-color: #f0f0f0;border: 1px #9999CC solid;height: 20px;width:50%; border-left-style:inset; border-right-style:groove ;border-top-style:inset; border-bottom-style:groove  ;}
+
+input.commonserver{background-color: #EEECFA;border: 1px #9999CC solid;height: 20px;width: 80%;}
+
+input.message{background-color: #EEECFA;border: 1px #9999CC solid;height: 20px;width: 160px;}
+
+input.common5{background-color: #EEECFA;border: 1px #9999CC solid;height: 20px;width: 100px;}
+
+input.readonly{width: 100px;background-color: #EEECFA;BORDER-TOP-WIDTH: 1px;BORDER-TOP-STYLE: solid;BORDER-TOP-COLOR: #EEECFA;BORDER-BOTTOM-WIDTH: 1px;BORDER-BOTTOM-STYLE: solid;BORDER-BOTTOM-COLOR: #EEECFA;BORDER-RIGHT-STYLE: none;BORDER-LEFT-STYLE: none;}
+
+input.cssButton{BORDER-RIGHT: #7b9ebd 1px solid; PADDING-RIGHT: 2px; BORDER-TOP: #7b9ebd 1px solid; PADDING-LEFT: 2px; FONT-SIZE: 12px; FILTER: progid:DXImageTransform.Microsoft.Gradient(GradientType=0, StartColorStr=#ffffff, EndColorStr=#cecfde); BORDER-LEFT: #7b9ebd 1px solid; CURSOR: hand; COLOR: black; PADDING-TOP: 2px; BORDER-BOTTOM: #7b9ebd 1px solid;}
+input.hcssButton{BORDER-RIGHT: #EEECFA 1px solid; PADDING-RIGHT: 2px; BORDER-TOP: #EEECFA 1px solid; PADDING-LEFT: 2px; FONT-SIZE: 12px; FILTER: progid:DXImageTransform.Microsoft.Gradient(GradientType=0, StartColorStr=#ffffff, EndColorStr=#cecfde); BORDER-LEFT: #EEECFA 1px solid; CURSOR: hand; COLOR: black; PADDING-TOP: 2px; BORDER-BOTTOM: #EEECFA 1px solid;}
+
+input.cssButtonLong{BORDER-RIGHT: #7b9ebd 1px solid; PADDING-RIGHT: 2px; BORDER-TOP: #7b9ebd 1px solid; PADDING-LEFT: 2px; FONT-SIZE: 12px; FILTER: progid:DXImageTransform.Microsoft.Gradient(GradientType=0, StartColorStr=#ffffff, EndColorStr=#cecfde); BORDER-LEFT: #7b9ebd 1px solid; CURSOR: hand; COLOR: black; PADDING-TOP: 2px; BORDER-BOTTOM: #7b9ebd 1px solid;}
+input.hcssButtonLong{BORDER-RIGHT: #EEECFA 1px solid; PADDING-RIGHT: 2px; BORDER-TOP: #EEECFA 1px solid; PADDING-LEFT: 2px; FONT-SIZE: 12px; FILTER: progid:DXImageTransform.Microsoft.Gradient(GradientType=0, StartColorStr=#ffffff, EndColorStr=#cecfde); BORDER-LEFT: #EEECFA 1px solid; CURSOR: hand; COLOR: black; PADDING-TOP: 2px; BORDER-BOTTOM: #EEECFA 1px solid;}
+
+input.cssButtonTooLong{BORDER-RIGHT: #7b9ebd 1px solid; PADDING-RIGHT: 2px; BORDER-TOP: #7b9ebd 1px solid; PADDING-LEFT: 2px; FONT-SIZE: 12px; FILTER: progid:DXImageTransform.Microsoft.Gradient(GradientType=0, StartColorStr=#ffffff, EndColorStr=#cecfde); BORDER-LEFT: #7b9ebd 1px solid; CURSOR: hand; COLOR: black; PADDING-TOP: 2px; BORDER-BOTTOM: #7b9ebd 1px solid;}
+input.hcssButtonTooLong{BORDER-RIGHT: #EEECFA 1px solid; PADDING-RIGHT: 2px; BORDER-TOP: #EEECFA 1px solid; PADDING-LEFT: 2px; FONT-SIZE: 12px; FILTER: progid:DXImageTransform.Microsoft.Gradient(GradientType=0, StartColorStr=#ffffff, EndColorStr=#cecfde); BORDER-LEFT: #EEECFA 1px solid; CURSOR: hand; COLOR: black; PADDING-TOP: 2px; BORDER-BOTTOM: #EEECFA 1px solid;}
+
+input.mulButton{BORDER-RIGHT: #7b9ebd 1px solid; PADDING-RIGHT: 2px; BORDER-TOP: #7b9ebd 1px solid; PADDING-LEFT: 2px; FONT-SIZE: 12px; FILTER: progid:DXImageTransform.Microsoft.Gradient(GradientType=0, StartColorStr=#ffffff, EndColorStr=#cecfde); BORDER-LEFT: #7b9ebd 1px solid; CURSOR: hand; COLOR: black; PADDING-TOP: 2px; BORDER-BOTTOM: #7b9ebd 1px solid;height:18px;border:0px;}
+input.hmulButton{BORDER-RIGHT: #EEECFA 1px solid; PADDING-RIGHT: 2px; BORDER-TOP: #EEECFA 1px solid; PADDING-LEFT: 2px; FONT-SIZE: 12px; FILTER: progid:DXImageTransform.Microsoft.Gradient(GradientType=0, StartColorStr=#ffffff, EndColorStr=#cecfde); BORDER-LEFT: #EEECFA 1px solid; CURSOR: hand; COLOR: black; PADDING-TOP: 2px; BORDER-BOTTOM: #EEECFA 1px solid;}
+
+input.login{BORDER-TOP-WIDTH: 1px;BORDER-TOP-STYLE: solid;BORDER-TOP-COLOR: white;BORDER-BOTTOM-WIDTH: 1px;BORDER-BOTTOM-STYLE: solid;BORDER-BOTTOM-COLOR: white;BORDER-RIGHT-STYLE: none;BORDER-LEFT-STYLE: none;}
+
+input.smartbutton {	BORDER-RIGHT: #7b9ebd 1px solid; PADDING-RIGHT: 2px; BORDER-TOP: #7b9ebd 1px solid; PADDING-LEFT: 2px; FONT-SIZE: 12px; FILTER: progid:DXImageTransform.Microsoft.Gradient(GradientType=0, StartColorStr=#ffffff, EndColorStr=#cecfde); BORDER-LEFT: #7b9ebd 1px solid; CURSOR: hand; COLOR: black; PADDING-TOP: 2px; BORDER-BOTTOM: #7b9ebd 1px solid;}
+input.hsmartbutton {	BORDER-RIGHT: #EEECFA 1px solid; PADDING-RIGHT: 2px; BORDER-TOP: #EEECFA 1px solid; PADDING-LEFT: 2px; FONT-SIZE: 12px; FILTER: progid:DXImageTransform.Microsoft.Gradient(GradientType=0, StartColorStr=#ffffff, EndColorStr=#cecfde); BORDER-LEFT: #EEECFA 1px solid; CURSOR: hand; COLOR: black; PADDING-TOP: 2px; BORDER-BOTTOM: #EEECFA 1px solid;}
+
+
+/*--TEXTAREA的样式--*/
+textarea.common{border: 1px #9999CC solid;width: 98%;background-color: #f6ffff; border-left-style:inset; border-right-style:groove ;border-top-style:inset; border-bottom-style:groove  ;}
+textarea.hcommon{border: 1px #9999CC solid;width: 98%;background-color: #fFffff; border-left-style:inset; border-right-style:groove ;border-top-style:inset; border-bottom-style:groove  ;}
+
+/*--SELECT的样式--*/
+select{background-color: #EEECFA;}
+
+select.query{background-color: #EEECFA;}
+
+/*--A的样式--*/
+A:link {text-decoration: none;color: #800080;font-size:9pt;}
+A:visited {text-decoration: none;color: #800080;font-size:9pt;}
+A.active {text-decoration: none;color: #800080;font-size:9pt;}
+A:hover {text-decoration: none;color: red;font-size:9pt;}
+
+/*--IMG的样式--*/
+img.button{cursor:hand;}

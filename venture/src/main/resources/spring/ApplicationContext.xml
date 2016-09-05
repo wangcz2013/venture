@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:jdbc="http://www.springframework.org/schema/jdbc"  
+	xmlns:jee="http://www.springframework.org/schema/jee" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:jpa="http://www.springframework.org/schema/data/jpa"
+	xmlns:rop="http://www.prlife.com/schema/rop"
+	xsi:schemaLocation="
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd
+		http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-4.0.xsd
+		http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee-4.0.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd
+		http://www.springframework.org/schema/data/jpa http://www.springframework.org/schema/data/jpa/spring-jpa-1.3.xsd
+		http://www.prlife.com/schema/rop http://www.prlife.com/schema/rop/rop-1.0.xsd"
+	default-lazy-init="true">
+
+	<description>Spring公共配置 </description>
+
+	<!--引入数据库配置属性文件 -->
+	<context:property-placeholder location="classpath:dbconfig.properties" />
+	
+	<!-- 使用annotation 自动注册bean, 并保证@Required、@Autowired的属性被注入 -->
+	<context:component-scan base-package="com.prlife.taxvat">
+		<context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+		<context:exclude-filter type="annotation" expression="org.springframework.web.bind.annotation.ControllerAdvice"/>
+	</context:component-scan>
+	<!-- Jpa Entity Manager 配置 -->
+	<bean id="entityManagerFactory" class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean"> 
+		<property name="dataSource" ref="dataSource"/>
+		<property name="jpaVendorAdapter" ref="hibernateJpaVendorAdapter"/>
+		<property name="packagesToScan" value="com.prlife.taxvat.main"/>
+		<property name="jpaProperties">
+			<props>
+				<!-- 命名规则 My_NAME->MyName -->
+				<prop key="hibernate.ejb.naming_strategy">org.hibernate.cfg.ImprovedNamingStrategy</prop>
+			</props>
+		</property>
+	</bean>
+	
+	<bean id="hibernateJpaVendorAdapter" class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter">
+		<property name="databasePlatform">
+			<bean factory-method="getDialect" class="com.prlife.modules.persistence.Hibernates">
+				<constructor-arg ref="dataSource"/>
+			</bean>
+		</property>
+	</bean>
+
+	<!-- Spring Data Jpa配置 -->
+ 	<jpa:repositories base-package="com.prlife.taxvat.main"  transaction-manager-ref="transactionManager" entity-manager-factory-ref="entityManagerFactory"/>
+   
+	<!-- Jpa 事务配置 -->
+	<bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+		<property name="entityManagerFactory" ref="entityManagerFactory"/>
+	</bean>
+
+	<!-- 使用annotation定义事务 -->
+	<tx:annotation-driven transaction-manager="transactionManager" proxy-target-class="true" />
+
+	<!-- JSR303 Validator定义 -->
+ 	<bean id="validator" class="org.springframework.validation.beanvalidation.LocalValidatorFactoryBean" />
+ 	
+ 	<!-- 配置数据源 使用的是Druid数据源 -->
+	<bean id="${db-source-jdbc}" class="com.alibaba.druid.pool.DruidDataSource"
+		init-method="init" destroy-method="close">
+		<property name="url" value="${jdbc.url}" />
+		<property name="username" value="${jdbc.username}" />
+		<property name="password" value="${jdbc.password}" />
+
+		<!-- 初始化连接大小 -->
+		<property name="initialSize" value="0" />
+		<!-- 连接池最大使用连接数量 -->
+		<property name="maxActive" value="20" />
+		
+		<!-- 连接池最小空闲 -->
+		<property name="minIdle" value="0" />
+		<!-- 获取连接最大等待时间 -->
+		<property name="maxWait" value="60000" />
+		<property name="poolPreparedStatements" value="true" />
+		<property name="maxPoolPreparedStatementPerConnectionSize"
+			value="33" />
+		<!-- 用来检测有效sql -->
+		<property name="validationQuery" value="${validationQuery}" />
+		<property name="testOnBorrow" value="false" />
+		<property name="testOnReturn" value="false" />
+		<property name="testWhileIdle" value="true" />
+		<!-- 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒 -->
+		<property name="timeBetweenEvictionRunsMillis" value="60000" />
+		<!-- 配置一个连接在池中最小生存的时间，单位是毫秒 -->
+		<property name="minEvictableIdleTimeMillis" value="25200000" />
+		<!-- 打开removeAbandoned功能 -->
+		<property name="removeAbandoned" value="true" />
+		<!-- 1800秒，也就是30分钟 -->
+		<property name="removeAbandonedTimeout" value="1800" />
+		<!-- 关闭abanded连接时输出错误日志 -->
+		<property name="logAbandoned" value="true" />
+		<!-- 监控数据库 -->
+		<property name="filters" value="mergeStat" />
+	</bean>
+	
+	<!-- 数据源的配制-使用JNDI -->
+	<bean id="${db-source-jndi}" class="org.springframework.jndi.JndiObjectFactoryBean">
+         <property name="jndiName" value="tax_app_DS" />        
+    </bean>
+    
+    <!-- 启动Rop框架 -->
+    <rop:annotation-driven
+        id="router"
+        session-manager="sampleSessionManager"
+        app-secret-manager="appSecretManager"
+        service-access-controller="serviceAccessController"
+        formatting-conversion-service="conversionService"
+        ext-error-base-names="i18n/rop/sampleRopError,i18n/rop/sampleRopError1"
+        service-timeout-seconds="10"
+        invoke-times-controller="invokeTimesController"
+        upload-file-max-size="10"
+        upload-file-types="png,gif"
+        core-pool-size="200"
+        max-pool-size="500"
+        queue-capacity="50"
+        keep-alive-seconds="300"
+        sign-enable="true"/>
+
+	<!-- 会话管理器 -->
+    <bean id="sampleSessionManager" class="com.prlife.taxvat.SampleSessionManager" />
+    <!-- 服务调用次数计数器 -->
+    <bean id="invokeTimesController" class="com.prlife.taxvat.SampleInvokeTimesController"/>
+	<!-- 应用键/密钥管理器 -->
+    <bean id="appSecretManager"
+          class="com.prlife.taxvat.SampleAppSecretManager"/>
+	<!-- 服务访问控制器，判断应用或应用的用户是否在权访问目标服务 -->
+    <bean id="serviceAccessController" class="com.prlife.taxvat.SampleServiceAccessController"/>
+
+    <!--设置自定义的类型转换服务，注册自定义的类型转换器-->
+    <bean id="conversionService"
+          class="org.springframework.format.support.FormattingConversionServiceFactoryBean">
+        <property name="converters">
+            <set>
+                <!--将xxxx-yyyyyyy格式的电话转换为内部的Telephone对象-->
+                <bean class="com.prlife.taxvat.converter.TelephoneConverter"/>
+                <bean class="com.prlife.taxvat.converter.DateConverter"/>
+            </set>
+        </property>
+    </bean>
+
+    <!--注册拦截器，可配置多个-->
+    <rop:interceptors>
+        <bean class="com.prlife.taxvat.ReservedUserNameInterceptor"/>
+    </rop:interceptors>
+
+    <!--注册监听器，可配置多具-->
+    <rop:listeners>
+        <bean class="com.prlife.taxvat.SamplePostInitializeEventListener"/>
+        <bean class="com.prlife.taxvat.SamplePreDoServiceEventListener"/>
+        <bean class="com.prlife.taxvat.SampleAfterDoServiceEventListener"/>
+    </rop:listeners>
+
+    <!--自定义method,appKey等这些系统级参数的参数名-->
+    <rop:sysparams
+            format-param-name="messageFormat"
+            jsonp-param-name="__invoke"/> 
+</beans>

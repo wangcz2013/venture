@@ -1,0 +1,225 @@
+/*-------------------------------------------------------------------------*/
+/*    文件名称: PiccShStandard.css                                         */
+/*    文件功能: 定义PICC上海市财产业务处理系统浏览器版的标准页面样式       */
+/*  最近更新人: 吴鹏                                                       */
+/*最近更新日期: 2001-07-28                                                 */
+/*-------------------------------------------------------------------------*/
+
+/*--BODY的样式--*/
+    body { font-size:9pt; }
+
+    body.interface { font-size:9pt;
+                     background-image:url(http://172.16.80.204:8000/Images/piccSh/bgCommon.gif) }
+
+/*--TABLE的样式--*/
+    table.common { width: 98%;
+                   font-size: 9pt; }
+
+    table.three { width: 70%;
+                  font-size: 9pt }
+
+    table.two { width: 60%;
+                font-size: 9pt }
+
+    table.menu { width: 100%;
+                 font-size:9pt}
+    table.menu2 { width: 100%;
+                 font-size:9pt}
+    table.sub { width: 95%;
+                font-size:9pt }
+
+/*--TD的样式--*/
+    td.common{ font-size: 9pt}
+
+    td.formtitle { font-size: 9pt;
+                   font-weight: bold;
+                   background-color: #4D457A;
+                   text-align: center;
+                   color: #ffffff;}
+
+
+    td.title { background-color: #CCC8E0;
+               text-align: left;
+               width: 10%;
+               color: #000000 }
+
+    td.mulinetitle { background-color: #EEECFA;
+               text-align: center; 
+               color: #000000;
+               BORDER-RIGHT: black 1pt solid; 
+               BORDER-TOP: black 1pt solid; 
+               BORDER-LEFT: black 1pt solid;             
+               BORDER-BOTTOM: black 1pt solid}
+    
+    td.muline { background-color: #EEECFA;
+               text-align: center;
+               color: #000000; 
+               BORDER-RIGHT: black 1pt solid; 
+               BORDER-TOP: black 1pt solid; 
+               BORDER-LEFT: black 1pt solid;             
+               BORDER-BOTTOM: black 1pt solid}
+
+    td.subformtitle { background-color: #CCC8E0;
+                      text-align: left;
+                      color: #000000 }
+
+    td.centertitle { background-color: #EEECFA;
+                     text-align: center;
+                     color: #000000 }
+
+    td.input { background-color: #EEECFA;
+               width: 20% }
+
+    td.text  { background-color: #EEECFA;
+               color: #000000 }
+
+    td.lefttitle { background-color: #6699CC;
+               text-align:left;
+               color: #FFFFFF }
+    
+    td.titleLink0  {text-align:center;
+                
+                 cursor: hand;
+                 background-color:#00573f;
+                  color: #ffffff}
+
+    td.titleLink1 {text-align:center;
+                
+                 cursor: hand;
+                 background-color:#006c32;
+                  color: #ffffff}
+
+    td.titleLink2{text-align:center;
+                  cursor: hand;
+                  background-color:#45863e;
+                  color: #ffffff}
+     td.titleLink3{text-align:center;
+                
+                 cursor: hand;
+                 background-color:#59af50;
+                  color: #ffffff}
+     td.titleLink4 {text-align:center;
+                
+                 cursor: hand;
+                 background-color:#6600cc;
+                  color: #ffffff}     
+                  
+                  
+    td.itemLink {text-align:left;
+                 cursor: hand;
+                 background-color:#00573f;
+                 color: #FFFFFF}
+                 
+     td.itemLink2{text-align:left;
+                 cursor: hand;
+                 background-color:#00c462;
+                 color: #FFFFFF}            
+                 
+     td.itemNoPermission {text-align:left;
+                  background-color:#777bc4;
+		          color: #000000;}
+		          
+     td.button { background-color: #ffffff;
+                text-align: center;
+                color: #000000 }
+/*--TR的样式--*/
+    tr.listtitle { background-color: #4D457A;
+                   text-align: center;
+                   color: #ffffff }
+
+    tr.listodd { background-color: #CCC8E0;
+                 text-align: center;
+                 color: #800080 }
+
+    tr.listeven { background-color: #EEECFA;
+                  text-align: center;
+                  color: #800080 }
+
+
+/*--INPUT的样式--*/
+    input { font-size: 10pt }
+
+    input.common   { background-color: #EEECFA;
+                     border: 1px #9999CC solid;
+                     height: 20px;
+                     width: 160px}             
+                     
+    input.mulcommon   { background-color: #EEECFA;
+                       border: 1px #EEECFA solid;
+                       }
+
+    input.mulreadonly { 
+                     background-color: #EEECFA;
+                     color: #000000; 
+                     text-align: center;
+                     BORDER-TOP-WIDTH: 1px;
+                     BORDER-TOP-STYLE: solid;
+                     BORDER-TOP-COLOR: #EEECFA;
+                     BORDER-BOTTOM-WIDTH: 1px;
+                     BORDER-BOTTOM-STYLE: solid;
+                     BORDER-BOTTOM-COLOR: #EEECFA;
+                     BORDER-RIGHT-STYLE: none;
+                     BORDER-LEFT-STYLE: none }
+
+    
+    input.readonly { width: 160px;
+                     background-color: #EEECFA;
+                     color: #000000;
+                     BORDER-TOP-WIDTH: 1px;
+                     BORDER-TOP-STYLE: solid;
+                     BORDER-TOP-COLOR: #EEECFA;
+                     BORDER-BOTTOM-WIDTH: 1px;
+                     BORDER-BOTTOM-STYLE: solid;
+                     BORDER-BOTTOM-COLOR: #EEECFA;
+                     BORDER-RIGHT-STYLE: none;
+                     BORDER-LEFT-STYLE: none }
+
+    input.listodd { width: 200px;
+                    background-color: #CCC8E0;
+                    color: #800080;
+                    border-style: none;
+                    hight:100px }
+
+    input.listeven { width: 200px;
+                     background-color: #EEECFA;
+                     color: #800080;
+                     border-style: none }
+
+    input.code { background-color: #a4ffe9;
+                 border: 1px #9999CC solid;
+                 color:#008000;
+                 height: 20px;
+                 width: 160px}
+
+    input.keyvalue { width:200px;
+                     readonly;
+                     background-color: #A7B5D6;
+                     color: white;
+                     border-style: none }
+
+/*--TEXTAREA的样式--*/
+    textarea.common { background-color: #EEECFA;
+                     border: 1px #9999CC solid;}
+
+/*--SELECT的样式--*/
+    select { width: 160px;
+             background-color: #EEECFA }
+
+    select.query { width: 40px;
+                   background-color: #EEECFA }
+
+/*--A的样式--*/
+
+    A.menu:link {text-decoration: none;color: #ffffff;}
+    A.menu:visited {text-decoration: none;color: #ffffff;}
+    A.menu:active {text-decoration: none;color: #ffffff;}
+    A.menu:hover {text-decoration: none;color: yellow; }
+
+    A:link {text-decoration: none;color: #800080;}
+    A:visited {text-decoration: none;color: #800080;}
+    A.active {text-decoration: none;color: #800080;}
+    A:hover {text-decoration: none;color: red; }
+
+
+/*--IMG的样式--*/
+    IMG.button { cursor:hand }

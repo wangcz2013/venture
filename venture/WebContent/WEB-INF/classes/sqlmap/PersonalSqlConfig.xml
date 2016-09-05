@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap >
+  <typeAlias type="ch10.SpringAndIbatis.Ibatis" alias="user"/>
+  <resultMap id="ibatisTest" class="user" >
+    <result column="id" property="id" jdbcType="VARCHAR" />
+    <result column="name" property="name" jdbcType="VARCHAR" />
+  </resultMap>
+  
+  <!-- 获得全查询列表 -->
+  <select id="getAllUsers" resultMap="ibatisTest">
+    select * from Ibatis
+  </select>
+  
+   <!-- 根据用户名获得用户对象 -->
+   <select id="getUsersByName" resultMap="ibatisTest">
+     select * from Ibatis where name=#value#
+  </select> 
+  
+  <!-- 根据id获得用户对象 -->
+    <select id="getUsersById" resultMap="ibatisTest">
+     select * from Ibatis where id=#value#
+  </select> 
+  
+   <!-- 新增用户对象 -->
+   <insert id="insertUsers" parameterClass="user">
+      insert into ibatis (id,name) values (#id#,#name#)
+   </insert>
+   
+   <!-- 删除用户对象 -->
+   <delete id="deleteUsers">
+     delete from ibatis where id=#value#
+   </delete>
+   
+   <!-- 更新用户对象 -->
+   <delete id="updateUsers" parameterClass="user">
+      update ibatis set name=#name# where id=#id#
+   </delete>
+</sqlMap>

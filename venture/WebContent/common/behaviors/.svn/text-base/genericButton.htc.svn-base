@@ -1,0 +1,188 @@
+<PUBLIC:COMPONENT
+    lightWeight = true
+>
+
+<PUBLIC:DEFAULTS
+    contentEditable = false
+    tabStop = true
+/>
+
+<PUBLIC:attach event="ondocumentready" onevent="initGenericButton()" />
+<PUBLIC:attach event="onmousedown" onevent="genericButtonOnMouseDown()" />
+<PUBLIC:attach event="onmouseup" onevent="genericButtonOnMouseUp()" />
+<PUBLIC:attach event="onmouseout" onevent="genericButtonOnMouseOut()" />
+<PUBLIC:attach event="onmouseover" onevent="genericButtonOnMouseOver()" />
+<PUBLIC:attach event="onselectstart" onevent="genericButtonOnSelect()" />
+<PUBLIC:attach event="onpropertychange" onevent="genericButtonPropertyChange()" />
+<PUBLIC:attach event="ondetach" onevent="cleanupGenericButton()" />
+
+<PUBLIC:property name="enabled" value=true />
+<PUBLIC:property name="buttonStyle" value="normal" />
+<PUBLIC:property name="toggleState" value=false />
+
+<script language="VBScript">
+
+' ----------------------------------------------------
+' IEWidgets: genericButton
+'                                                     
+' Copyright ©2002 Stedy Software and Systems          
+' Please see http://www.stedy.com for terms of use.   
+' ----------------------------------------------------
+
+option explicit
+
+dim drawState
+dim onClickHolder
+dim prevToggleState
+dim internalSettingProperties
+dim backgroundImageUrl
+
+sub initGenericButton()
+	prevToggleState = false
+	internalSettingProperties = false
+	backgroundImageUrl = element.currentStyle.selectedBackgroundUrl
+	if not enabled then showDisabled
+end sub
+
+sub cleanupGenericButton
+	
+end sub
+
+function genericButtonOnSelect()
+	with window.event
+		.cancelBubble = true
+		.returnValue = false
+	end with
+	genericButtonOnSelect = false
+end function
+
+sub genericButtonOnMouseDown
+	'if button.enabled = false then no drawing activity
+	if not enabled then exit sub
+	if buttonStyle <> "normal" then
+		prevToggleState = toggleState
+		internalSettingProperties = true
+		toggleState = true
+		internalSettingProperties = false
+	end if
+	showPressed style
+end sub
+
+sub genericButtonOnMouseUp
+	'if button.enabled = false then no drawing activity
+	if not enabled then exit sub
+	if buttonStyle <> "normal" then
+		if prevToggleState <> true then exit sub
+		prevToggleState = toggleState
+		internalSettingProperties = true
+		toggleState = false
+		internalSettingProperties = false
+	end if
+	showRaised style
+end sub
+
+sub genericButtonOnMouseOut
+	'if button.enabled = false then no drawing activity
+	if not enabled then exit sub
+	if buttonStyle <> "normal" then
+		if toggleState = true then exit sub
+	end if
+	showNormal style
+end sub
+
+sub genericButtonOnMouseOver
+	'if button.enabled = false then no drawing activity
+	if not enabled then exit sub
+	if buttonStyle <> "normal" then
+		if toggleState = true then exit sub
+	end if
+	showRaised style
+end sub
+
+sub showRaised(elStyle)
+	with elStyle
+		.borderLeft   = "1px solid buttonhighlight"
+		.borderRight  = "1px solid buttonshadow"
+		.borderTop    = "1px solid buttonhighlight"
+		.borderBottom = "1px solid buttonshadow"
+		.paddingTop    = "1px"
+		.paddingLeft   = "1px"
+		.paddingBottom = "1px"
+		.paddingRight  = "1px"
+		if buttonStyle <> "normal" then .backgroundImage = ""
+	end with
+end sub
+
+sub showPressed(elStyle)
+	with elStyle
+		.borderLeft   = "1px solid buttonshadow"
+		.borderRight  = "1px solid buttonhighlight"
+		.borderTop    = "1px solid buttonshadow"
+		.borderBottom = "1px solid buttonhighlight"
+		.paddingTop    = "2px"
+		.paddingLeft   = "2px"
+		.paddingBottom = "0px"
+		.paddingRight  = "0px"
+		if buttonStyle <> "normal" then .backgroundImage = backgroundImageUrl
+	end with
+end sub
+
+sub showNormal(elStyle)
+	with elStyle
+		.border = "1px solid buttonface"
+		.paddingTop    = "1px"
+		.paddingLeft   = "1px"
+		.paddingBottom = "1px"
+		.paddingRight  = "1px"
+		if buttonStyle <> "normal" then .backgroundImage = ""
+	end with
+end sub
+
+sub showDisabled
+	if drawState <> "DISABLED" then
+		if isobject(element.onclick) then
+			set onClickHolder = element.onclick
+			element.onclick = nothing
+		end if
+		style.cursor = "default"
+		drawState = "DISABLED"
+		showNormal style
+		innerHTML =	"<span class='coolDisabled'><span class='coolDisabled'>" & innerHTML & "</span></span>"
+	end if
+end sub
+
+sub showEnabled
+	if drawState = "DISABLED" then
+		if isobject(onClickHolder) then
+			set element.onclick = onClickHolder
+			set onClickHolder = nothing
+		end if
+		style.cursor = "hand"
+		drawState = "ENABLED"
+		innerHTML = children(0).children(0).innerHTML
+		showNormal style
+	end if
+end sub
+
+sub genericButtonPropertyChange
+	if window.event.propertyName = "enabled" then
+		if not enabled then
+			showDisabled
+		else
+			showEnabled
+		end if
+	elseif window.event.propertyName = "toggleState" then
+		if internalSettingProperties then exit sub
+		if toggleState = true then
+			prevToggleState = false
+			showPressed style
+		else
+			prevToggleState = true
+			showNormal style
+		end if
+	end if
+end sub
+
+</script>
+
+</PUBLIC:COMPONENT>

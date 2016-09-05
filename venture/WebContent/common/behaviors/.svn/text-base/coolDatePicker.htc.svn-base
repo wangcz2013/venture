@@ -1,0 +1,24 @@
+<PUBLIC:COMPONENT
+    lightWeight = true
+>
+
+<PUBLIC:DEFAULTS
+    contentEditable = false
+    tabStop = true
+/>
+
+<PUBLIC:attach event="ondocumentready" onevent="initTimer()" />
+
+<script language="JScript">
+function initTimer()
+{
+   if(element.getAttribute("timerflag")==null )
+   {
+     element.setAttribute("timerflag","1");
+     element.insertAdjacentHTML("afterEnd","<img src='../common/images/calendar.gif' vspace='1' onclick='calendar("+element.name+")'>");    
+   }
+}
+
+</script>
+
+</PUBLIC:COMPONENT>

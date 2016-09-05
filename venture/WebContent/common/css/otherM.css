@@ -1,0 +1,38 @@
+/*------------------------------------------------------------------*/
+/*    文件名称: other.css                                           */
+/*    文件功能: 定义menutop.jsp,quick.jsp,menu.jsp,station.jsp      */
+/*  最近更新人: 陈海强                                              */
+/*最近更新日期: 2004-12-22                                          */
+/*------------------------------------------------------------------*/
+
+body {
+font: tahoma,verdana,arial,helvetica,sans-serif;
+font-size: 12px; margin-top:0px;
+SCROLLBAR-FACE-COLOR: #799AE1; SCROLLBAR-HIGHLIGHT-COLOR: #799AE1; 
+SCROLLBAR-SHADOW-COLOR: #799AE1; SCROLLBAR-DARKSHADOW-COLOR: #799AE1; 
+SCROLLBAR-3DLIGHT-COLOR: #799AE1; SCROLLBAR-ARROW-COLOR: #FFFFFF;
+SCROLLBAR-TRACK-COLOR: #AABFEC;
+}
+TD {
+	FONT-SIZE: 12px
+}
+TH {
+	FONT-WEIGHT: bold; FONT-SIZE: 12px; BACKGROUND-IMAGE: url(../images/bg_h.gif); COLOR: white; BACKGROUND-COLOR: #4455aa
+}
+
+input{font-size: 10pt}
+input.common2{background-color: #FCF9F1;border: 1px #E1B41A solid;height: 20px}
+input.code2{background-color: #F1E7C4;border: 1px #E1B41A solid;height: 20px}
+.table {
+border: 1px solid #FFCC00;
+}
+.over        { border-left: 1px solid #FFFFFF; border-right: 1px solid #808080;
+               border-top: 1px solid #FFFFFF; border-bottom: 1px solid #808080;
+                }
+.out         { border-style: solid; border-width: 0 }
+.down        { border-left: 1px solid #808080; border-right: 1px solid #FFFFFF;
+               border-top: 1px solid #808080; border-bottom: 1px solid #FFFFFF;
+               padding-left: 2; padding-top: 2 }
+.up          { 	background-color:#AABFEC;
+	        border:1px solid #808080;
+	         }

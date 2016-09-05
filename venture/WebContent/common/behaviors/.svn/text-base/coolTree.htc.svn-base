@@ -1,0 +1,808 @@
+<PUBLIC:COMPONENT
+    lightWeight = true
+>
+
+<PUBLIC:DEFAULTS
+    contentEditable = false
+    tabStop = true
+/>
+
+<PUBLIC:attach event="ondocumentready" onevent="initCoolTree()" />
+<PUBLIC:attach event="onclick" onevent="coolTreeOnClick()" />
+<public:attach event="onmouseover" onevent="coolTreeOnMouseOver()" />
+<public:attach event="onmouseout" onevent="coolTreeOnMouseOut()" />
+<public:attach event="onmousedown" onevent="coolTreeOnMouseDown()" />
+<public:attach event="onmouseup" onevent="coolTreeOnMouseUp()" />
+<public:attach event="oncontextmenu" onevent="coolTreeHandleDown()" />
+<public:attach event="onkeydown" onevent="coolTreeOnKeyDown()" />
+<PUBLIC:attach event="ondetach" onevent="cleanupCoolTree()" />
+
+<PUBLIC:property name="borderStyle" value=0 />
+<PUBLIC:property name="menu" value="" />
+<PUBLIC:property name="menuVisible" value=false />
+
+<PUBLIC:method   name="expandAll" />
+<PUBLIC:method   name="collapseAll" />
+<PUBLIC:method   name="expandChildren" />
+<PUBLIC:method   name="collapseChildren" />
+<PUBLIC:method   name="getSelectedItem" />
+<PUBLIC:method   name="setSelectedItem" />
+
+<script language="VBScript">
+
+' ----------------------------------------------------
+' IEWidgets: CoolTree
+'                                                     
+' Copyright ©2002 Stedy Software and Systems          
+' Please see http://www.stedy.com for terms of use.   
+' ----------------------------------------------------
+
+option explicit
+
+dim childNodeImageUrl
+dim parentNodeCollapsedImageUrl
+dim parentNodeExpandedImageUrl
+dim defaultParentImageUrl
+dim defaultChildImageUrl
+
+dim objLI_Current
+dim procRef
+
+set objLI_Current = nothing
+
+sub initCoolTree()
+	with element.currentStyle
+		childNodeImageUrl = .childNodeImageUrl
+		parentNodeCollapsedImageUrl = .parentNodeCollapsedImageUrl
+		parentNodeExpandedImageUrl = .parentNodeExpandedImageUrl
+		defaultParentImageUrl = .defaultParentImageUrl
+		defaultChildImageUrl = .defaultChildImageUrl
+	end with
+	setTreeBorder
+	setTreeNodeImages
+	with element.style
+		.posWidth = width
+		.posHeight = height
+	end with
+	set procRef = GetRef("hideMenu")
+end sub
+
+sub cleanupCoolTree
+	set procRef = nothing
+end sub
+
+sub setTreeBorder
+	select case element.borderStyle
+		case 0
+			style.border = ""	
+		case 1
+			style.border = "1 solid black"	
+		case 2
+			style.border = "1 inset window"	
+		case 3
+			style.border = "2 inset window"	
+	end select					
+end sub
+
+sub setTreeNodeImages
+	dim el, saveNodeType
+	for each el in element.document.all.tags("LI")
+		saveNodeType = ucase(el.children(0).className)
+		setIconProperties saveNodeType, el.children(0)
+		setPictProperties saveNodeType, ucase(el.children(1).className), el.children(1)
+	next
+end sub
+
+sub setIconProperties(nodeType, el)
+	dim strImageURL
+	if nodeType = "ICON" then
+		with el
+			.height = 16
+			.width = 16
+		end with
+	else
+		select case nodeType
+			case "PARENTNODE"
+				strImageURL = parentNodeCollapsedImageUrl
+			case "CHILDNODE"
+				strImageURL = childNodeImageUrl
+			case else
+				strImageURL = childNodeImageUrl
+		end select
+		with el
+			.setAttribute "src", strImageURL
+			.height = 16
+			.width = 16
+			.className = "icon"
+		end with
+	end if
+end sub
+
+sub setPictProperties(nodeType, pictType, el)
+	dim strImageURL
+	if pictType = "PICT" then
+		with el
+			.height = 16
+			.width = 16
+		end with
+	else
+		select case nodeType
+			case "PARENTNODE"
+				strImageURL = defaultParentImageUrl
+			case "CHILDNODE"
+				strImageURL = defaultChildImageUrl
+			case else
+				strImageURL = defaultChildImageUrl
+		end select
+		with el
+			.setAttribute "src", strImageURL
+			.height = 16
+			.width = 16
+			.className = "pict"
+		end with
+	end if
+end sub
+
+sub coolTreeOnClick()
+	dim ev, objUnknown
+	set ev = window.event
+	set objUnknown = ev.srcElement
+	with ev
+		.cancelBubble = true
+		.returnValue = false
+	end with
+	with objUnknown
+		select case ucase(.tagName)
+			case "A"
+				selectNode objUnknown, false
+			case "IMG"
+				if IsLeaf(.parentElement) then
+					if ucase(.className) = "ICON" then
+						toggleNode(.parentElement)
+						selectNode objLI_Current, false
+					else
+						selectNode getHtmlElement(.parentElement, "A"), false
+					end if
+				else
+					selectNode getHtmlElement(.parentElement, "A"), false
+				end if
+			case else
+				selectNode objLI_Current, false
+		end select
+	end with
+	set objUnknown = nothing
+	set ev = nothing
+end sub
+
+sub coolTreeOnMouseOver()
+	dim objUnknown
+	set objUnknown = window.event.srcElement
+	with objUnknown
+		if ucase(.tagName) = "A" then
+			.className = "clsMouseOver"
+			if (.offsetLeft + .offsetWidth) => element.offsetWidth then element.title = .innerText
+		end if
+	end with
+	set objUnknown = nothing
+end sub
+
+sub coolTreeOnMouseOut()
+	dim objUnknown
+	set objUnknown = window.event.srcElement
+	with objUnknown
+		if not objUnknown is objLI_Current then
+			if ucase(.tagName) = "A" then
+				.className = ""
+				element.title = ""
+			end if
+		else
+			if ucase(.tagName) = "A" then
+				.className = "clsCurrentHasFocus"
+			end if
+		end if
+	end with
+	set objUnknown = nothing
+end sub
+
+sub coolTreeOnMouseDown()
+	dim objUnknown
+	set objUnknown = window.event.srcElement
+	with objUnknown
+		if ucase(.tagName) = "A"  then
+			.className = "clsMouseDown"
+		end if
+	end with
+	set objUnknown = nothing
+end sub
+
+sub coolTreeOnMouseUp()
+	dim objUnknown
+	set objUnknown = window.event.srcElement
+	with objUnknown
+		if ucase(.tagName) = "A" then
+			.className = "clsMouseOver"
+		end if
+	end with
+	set objUnknown = nothing
+end sub
+
+sub coolTreeHandleDown()
+	dim ev, objUnknown
+	set ev = window.event
+	set objUnknown = ev.srcElement
+    with ev
+		.cancelBubble = true
+		.returnValue = false
+	end with
+	if ucase(objUnknown.className) = "PICT" then
+		set objUnknown = getHtmlElement(objUnknown.parentElement, "A")
+	end if
+	if ucase(objUnknown.tagName) = "A"  then
+		selectNode objUnknown, false
+		if element.menu <> "" then showMenu
+	end if
+	set objUnknown = nothing
+	set ev = nothing
+end sub
+
+sub coolTreeOnKeyDown()
+    dim ev
+	set ev = window.event
+    with ev
+		.cancelBubble = true
+		.returnValue = false
+	end with
+    select case ev.keyCode
+		case 9		'tab key
+			if ev.shiftKey then
+				movePrevious
+			else
+				moveNext
+			end if
+		case 13		'enter key
+			coolTreeOnClick
+		case 37		'left arrow key
+			moveLeft
+		case 38		'up arrow key
+			moveUp
+		case 39		'right arrow key
+			moveRight
+		case 40		'down arrow key
+			moveDown
+		case 188	'"<" key
+			movePrevious
+		case 190	'">" key
+			moveNext
+    end select
+	set ev = nothing
+end sub
+
+sub moveNext()
+	dim objLI_Temp
+	dim objLI_New
+	dim objIMG
+	set objIMG = getHtmlElement(objLI_Current.parentElement, "IMG")
+	if instr(objIMG.src, "expand.gif") <> 0 then
+		set objLI_New = getFirstChild(objLI_Current.parentElement)
+		selectNode getHtmlElement(objLI_New, "A"), false
+	else
+		if isLeaf(objLI_Current.parentElement) then
+			expandNode objLI_Current.parentElement, objIMG
+			set objLI_New = getFirstChild(objLI_Current.parentElement)
+			if not objLI_New is nothing then
+				selectNode getHtmlElement(objLI_New, "A"), false
+			end if
+		else
+			set objLI_Temp = objLI_Current.parentElement
+			set objLI_New = getNextSibling(objLI_Temp)
+			do while (objLI_New is nothing)
+				set objLI_Temp = getParent(objLI_Temp)
+			          
+				if objLI_Temp is nothing then
+					set objLI_New = objLI_Current.parentElement
+				else
+					set objLI_New = getNextSibling(objLI_Temp)
+				end if
+			loop
+			selectNode getHtmlElement(objLI_New, "A"), false
+		end if
+	end if
+	set objLI_New = nothing
+	set objLI_Temp = nothing
+	set objIMG = nothing
+end sub
+
+sub movePrevious()
+	moveUp
+end sub
+
+sub moveUp()
+	dim objLI_New
+	dim objIMG
+	set objLI_New = getPreviousSibling(objLI_Current.parentElement)
+	if not objLI_New is nothing then
+		set objIMG = getHtmlElement(objLI_New, "IMG")
+		if instr(objIMG.src, "expand.gif") <> 0 then set objLI_New = getLastChild(objLI_New)
+		selectNode getHtmlElement(objLI_New, "A"), false
+	else
+		set objLI_New = getParent(objLI_Current.parentElement)
+		if not objLI_New is nothing then
+			selectNode getHtmlElement(objLI_New, "A"), false
+		end if
+	end if
+	set objIMG = nothing
+	set objLI_New = nothing
+end sub
+
+sub moveDown()
+	dim objLI_New
+	dim objLI_Temp
+	dim objIMG
+	set objIMG = getHtmlElement(objLI_Current.parentElement, "IMG")
+	if instr(objIMG.src, "expand.gif") <> 0 then
+		set objLI_New = getFirstChild(objLI_Current.parentElement)
+		selectNode getHtmlElement(objLI_New, "A"), false
+	else
+		set objLI_Temp = objLI_Current.parentElement
+		set objLI_New = getNextSibling(objLI_Temp)
+		do while (objLI_New is nothing)
+			set objLI_Temp = getParent(objLI_Temp)
+		          
+			if objLI_Temp is nothing then
+				set objLI_New = objLI_Current.parentElement
+			else
+				set objLI_New = getNextSibling(objLI_Temp)
+			end if
+		loop
+		selectNode getHtmlElement(objLI_New, "A"), false
+	end if
+	set objLI_New = nothing
+	set objLI_Temp = nothing
+	set objIMG = nothing
+end sub
+
+sub moveLeft()
+	dim objLI_New
+	dim objIMG
+	set objIMG = getHtmlElement(objLI_Current.parentElement, "IMG")
+	if instr(objIMG.src, "expand.gif") <> 0 then
+		toggleNode objLI_Current.parentElement
+	else
+		set objLI_New = getParent(objLI_Current.parentElement)
+		if not objLI_New is nothing then selectNode getHtmlElement(objLI_New, "A"), false
+    end if
+	set objLI_New = nothing
+	set objIMG = nothing
+end sub
+
+sub moveRight()
+	dim objLI_New
+	dim objIMG
+	set objIMG = getHtmlElement(objLI_Current.parentElement, "IMG")
+	if instr(objIMG.src, "expand.gif") <> 0 then
+		moveDown
+	else
+		if isLeaf(objLI_Current.parentElement) then	toggleNode objLI_Current.parentElement
+	end if
+	set objLI_New = nothing
+	set objIMG = nothing
+end sub
+
+sub toggleNode(objLI)
+	dim objIMG
+	set objIMG = getHtmlElement(objLI, "IMG")
+    if instr(objIMG.src, parentNodeCollapsedImageUrl) = 0 then
+      collapseNode objLI, objIMG
+    else
+      expandNode objLI, objIMG
+	end if
+	set objIMG = nothing
+end sub
+
+sub collapseNode(objLI, objIMG)
+	dim objUL
+	set objUL = getHtmlElement(objLI, "UL")
+	if not objUL is nothing then
+		if not objIMG is nothing then
+			objIMG.setAttribute "src", parentNodeCollapsedImageUrl
+			objUL.style.display = "none"
+		end if
+	end if
+	set objUL = nothing
+end sub
+
+sub expandNode(objLI, objIMG)
+  dim objUL
+  set objUL = getHtmlElement(objLI, "UL")
+	if not objUL is nothing then
+		if not objIMG is nothing then
+			objIMG.setAttribute "src", parentNodeExpandedImageUrl
+			with objUL
+				.style.filter = "blendTrans(duration=0.50)"
+				.filters.blendTrans.apply()
+				.style.display = "list-item"
+				.filters.blendTrans.play()
+			end with
+		end if
+	end if
+	set objUL = nothing
+end sub
+
+sub selectNode(objLI, blnRunExpando)
+    highlightNode objLI
+    scrollIntoView objLI, blnRunExpando
+end sub
+
+sub highlightNode(objLI)
+	if not objLI is nothing then
+		objLI.className = "clsCurrentHasFocus"
+		if not objLI is objLI_Current then
+			if not objLI_Current is nothing then
+				objLI_Current.className = ""
+			end if
+		end if
+		set objLI_Current = objLI
+	end if
+end sub
+
+sub scrollIntoView(objLI, blnRunExpando)
+	if not objLI is nothing then
+        if blnRunExpando then expandToRoot objLI.parentElement
+        on error resume next
+        objLI.focus
+        on error goto 0
+    end if
+end sub
+
+sub expandAll()
+	dim liCol
+	dim childItem
+	dim objIMG
+	set liCol = element.document.all.tags("LI")
+	for each childItem in liCol
+		if isLeaf(childItem) then
+			set objIMG = getHtmlElement(childItem, "IMG")
+			expandNode childItem, objIMG
+			set objIMG = nothing
+		end if
+	next  
+	set liCol = nothing
+end sub
+
+sub collapseAll()
+	dim liCol
+	dim childItem
+	dim objIMG
+	set liCol = element.document.all.tags("LI")
+	for each childItem in liCol
+		if isLeaf(childItem) then '
+			set objIMG = getHtmlElement(childItem, "IMG")
+			collapseNode childItem, objIMG
+			set objIMG = nothing
+		end if
+	next  
+	set liCol = nothing
+end sub
+
+sub expandToRoot(objStart)
+	dim objParent
+	dim objIMG
+	set objParent = objStart
+	do until objParent is element
+		if isLeaf(objParent) then
+			if not objParent is objStart then
+				set objIMG = getHtmlElement(objParent, "IMG")
+				expandNode objParent, objIMG
+				set objIMG = nothing
+			end if
+		end if
+		set objParent = objParent.parentElement
+	loop
+	set objParent = nothing
+end sub
+
+sub expandChildren()
+	dim childItem
+	dim objIMG
+	if not objLI_Current is nothing then
+		set objIMG = getHtmlElement(objLI_Current.parentElement, "IMG")
+		expandNode objLI_Current.parentElement, objIMG
+		set objIMG = nothing
+		for each childItem in objLI_Current.parentElement.children
+			if ucase(childItem.tagName) = "UL" then
+				expandSubChildren childItem
+			end if
+		next
+	end if
+end sub
+
+sub expandSubChildren(objUL)
+	dim childItem
+	dim objIMG
+	for each childItem in objUL.children
+		if isLeaf(childItem) then
+			set objIMG = getHtmlElement(childItem, "IMG")
+			expandNode childItem, objIMG
+			set objIMG = nothing
+		end if
+		if ucase(childItem.tagName) = "UL" then
+			expandSubChildren childItem
+		end if
+	next
+end sub
+
+sub collapseChildren()
+	dim childItem
+	dim objIMG
+	if not objLI_Current is nothing then
+		set objIMG = getHtmlElement(objLI_Current.parentElement, "IMG")
+		collapseNode objLI_Current.parentElement, objIMG
+		set objIMG = nothing
+		for each childItem in objLI_Current.parentElement.children
+			if ucase(childItem.tagName) = "UL" then
+				collapseSubChildren childItem
+			end if
+		next
+	end if
+end sub
+
+sub collapseSubChildren(objUL)
+	dim childItem
+	dim objIMG
+	for each childItem in objUL.children
+		if isLeaf(childItem) then
+			set objIMG = getHtmlElement(childItem, "IMG")
+			collapseNode childItem, objIMG
+			set objIMG = nothing
+		end if
+		if ucase(childItem.tagName) = "UL" then
+			collapseSubChildren childItem
+		end if
+	next
+end sub
+
+function getSelectedItem()
+	if not objLI_Current is nothing then
+		getSelectedItem = objLI_Current.innerText
+	else
+		getSelectedItem = null
+	end if
+end function
+
+sub setSelectedItem(strItem)
+	dim childItem
+	for each childItem in element.children
+		if childItem.children.length then
+			if setSelectedItemInChildren(childItem, strItem) then exit sub
+		end if
+	next
+end sub
+
+function setSelectedItemInChildren(nodeItem, strItem)
+	dim childItem
+	for each childItem in nodeItem.children
+		if childItem.children.length then
+			if setSelectedItemInChildren(childItem, strItem) then
+				setSelectedItemInChildren = true
+				exit function
+			end if
+		else
+			if childItem.innerText = strItem then
+				selectNode childItem, true
+				setSelectedItemInChildren = true
+				exit function
+			end if
+		end if
+	next
+	setSelectedItemInChildren = false
+end function
+
+sub showMenu()
+	dim intRightEdge
+	dim intBottomEdge
+	dim intScrollLeft
+	dim intScrollTop
+	dim cliX, cliY
+	with window.event
+		cliX = .clientX
+		cliY = .clientY
+	end with
+	with parentElement.document.body
+		intRightEdge = .clientWidth - cliX
+		intBottomEdge = .clientHeight - cliY
+		intScrollLeft = .scrollLeft + cliX
+		intScrollTop = .scrollTop + cliY
+	end with
+	with window.document.all(element.menu)
+		if not .menuSized then .sizeMenu
+		if (intRightEdge < .offsetWidth) then
+			.style.left = intScrollLeft - .offsetWidth
+		else
+			.style.left = intScrollLeft
+		end if
+		if (intBottomEdge < .offsetHeight) then
+			.style.top = intScrollTop - .offsetHeight
+		else
+			.style.top = intScrollTop
+		end if
+		element.menuVisible = true
+		window.document.attachEvent "onmousedown", procRef
+		.filters.blendTrans.apply()
+		.style.visibility = "visible"
+		.filters.blendTrans.play()
+	end with
+end sub
+
+sub hideMenu()
+	element.menuVisible = false
+	with window.document
+		.all(element.menu).style.visibility = "hidden"
+		.detachEvent "onmousedown", procRef
+	end with
+end sub
+
+function getHtmlElement(objParent, strChildTagName)
+	dim i
+	dim objRetVal
+	dim oChildren
+	set objRetVal = nothing
+	if not objParent is nothing then
+		set oChildren = objParent.children
+		if not oChildren is nothing then
+			for i = 0 to oChildren.length - 1
+				if ucase(oChildren(i).tagName) = ucase(strChildTagName) then
+					set objRetVal = oChildren(i)
+					exit for
+				end if
+			next  
+		end if
+	end if
+	set getHtmlElement = objRetVal
+	set objRetVal = nothing
+	set oChildren = nothing
+end function
+
+function getNextSibling(objLI)
+	dim i
+	dim objSiblings
+	dim objRetVal
+	set objRetVal = nothing
+	set objSiblings = getSiblings(objLI)
+	if not objSiblings is nothing then
+		for i = 0 to objSiblings.length - 1
+			if (objSiblings(i) is objLI) and (i < (objSiblings.length - 1)) then
+				set objRetVal = objSiblings(i + 1)
+				exit for
+			end if
+		next
+	end if
+	set getNextSibling = objRetVal
+	set objSiblings = nothing
+	set objRetVal = nothing
+end function
+
+function getPreviousSibling(objLI)
+	dim i
+	dim objSiblings
+	dim objRetVal
+	set objRetVal = nothing
+	set objSiblings = getSiblings(objLI)
+	if not objSiblings is nothing then
+		for i = 0 to objSiblings.length - 1
+			if (objSiblings(i) is objLI) and (i > 0) then
+				set objRetVal = objSiblings(i - 1)
+				exit for
+			end if
+		next
+	end if
+	set getPreviousSibling = objRetVal
+	set objSiblings = nothing
+	set objRetVal = nothing
+end function
+
+function getFirstChild(objLI)
+	dim i
+	dim objChildren
+	dim objRetVal
+	set objRetVal = nothing
+	set objChildren = getChildren(objLI)
+	if not objChildren is nothing then
+		for i = 0 to objChildren.length - 1
+			if ucase(objChildren(i).tagName) = "LI" then
+				set objRetVal = objChildren(i)
+				exit for
+			end if
+		next
+	end if
+	set getFirstChild = objRetVal
+	set objChildren = nothing
+	set objRetVal = nothing
+end function
+
+function getLastChild(objLI)
+	dim i
+	dim objChildren
+	dim objRetVal
+	set objRetVal = nothing
+	set objChildren = getChildren(objLI)
+	if not objChildren is nothing then
+		for i = (objChildren.length - 1) to 0 step -1
+			if ucase(objChildren(i).tagName) = "LI" then
+				set objRetVal = objChildren(i)
+				exit for
+			end if
+		next
+	end if
+	set getLastChild = objRetVal
+	set objChildren = nothing
+	set objRetVal = nothing
+end function
+
+function getParent(objLI)
+	dim objRetVal
+	if not objLI is nothing then
+		if not objLI.parentElement is nothing then
+			set objRetVal = objLI.parentElement.parentElement
+		end if
+	end if
+	set getParent = objRetVal
+	set objRetVal = nothing
+end function
+
+function getSiblings(objLI)
+	dim i
+	dim objUL
+	dim objLI_Parent
+	dim objRetVal
+	set objLI_Parent = getParent(objLI)
+	if not objLI_Parent is nothing then
+		set objUL = objLI.parentElement
+		for i = 0 to objUL.children.length - 1
+			if ucase(objUL.children(i).tagName) = "LI" then
+				set objRetVal = objUL.children
+				exit for
+			end if
+		next
+	else
+		set objRetVal = getChildren(objLI_Parent)
+	end if
+	set getSiblings = objRetVal
+	set objRetVal = nothing
+	set objLI_Parent = nothing
+	set objUL = nothing
+end function
+
+function getChildren(objLI)
+	dim i
+	dim j
+	dim objUL
+	dim objRetVal
+	set objRetVal = nothing
+	if not objLI is nothing then
+		for i = 0 to objLI.children.length - 1
+			if ucase(objLI.children(i).tagName) = "UL" then
+				set objUL = objLI.children(i)
+				for j = 0 to objUL.children.length - 1
+					if ucase(objUL.children(j).tagName) = "LI" then
+						set getChildren = objUL.children
+						exit function
+					end if
+				next
+			end if
+		next
+	end if
+	set getChildren = objRetVal
+	set objRetVal = nothing
+	set objUL = nothing
+end function
+
+function isLeaf(objLI)
+    dim objUL
+    set objUL = getHtmlElement(objLI, "UL")
+	isLeaf = not objUL is nothing
+    set objUL = nothing
+end function
+
+</script>
+
+</PUBLIC:COMPONENT>
