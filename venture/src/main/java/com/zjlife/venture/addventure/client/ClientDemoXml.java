@@ -22,7 +22,7 @@ import org.dom4j.Element;
 
 public class ClientDemoXml {
 	
-	private static final String TARGET_URL = "http://localhost:8080/tax-vat/router";//服务接口的URL,建议可以配置
+	private static final String TARGET_URL = "http://localhost:8080/venture/router";//服务接口的URL,建议可以配置
 //	private static final String TARGET_URL = "http://10.132.2.139:8080/tax-vat/router";//服务接口的URL,建议可以配置
 	private static final String CHARSET_NAME = "utf-8";//通讯的编码格式为utf-8字符集
 	

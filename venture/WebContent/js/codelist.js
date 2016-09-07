@@ -1,7 +1,7 @@
 
  
         //测试用的数据
- 	
+ 	   
         var old_value = "";
         var highlightindex = -1;   //高亮
 
@@ -88,29 +88,28 @@
   
     }
     
-
-     function selclick(ele,codetype,comcode){
-    	 
     
-    	 $.ajax({
-				type:"post",
-				url:"../codeAction!searchcode",
-				data:"code.codePK.codetype="+codetype+"&&code.comcode="+comcode,
-				dataType:"json",//预期得到类型
-				success:function(rs){
-					var codelist = new Array();
-					for(var i=0;i<rs.length;i++){
-						codelist[i]=rs[i].codePK.code+"-"+rs[i].codename;
-					}
-					
-					var x = ele.offsetLeft+(ele.offsetParent?getX(ele.offsetParent):ele.x?ele.x:0);
-		     		var y = (ele.offsetParent?ele.offsetTop+getY(ele.offsetParent):ele.y?ele.y:0)+ele.offsetHeight;
-		           if ($("#"+ele.id).val() == "") {
-		                    AutoCompleteSelect("spanCode", ele.id, x,y,codelist);
-		            }
-				}	
+   
 
-			});
+
+     function selclick(ele,codetype){
+    	 
+    	 var separationMain="codeManagerInterface={\"codetype\":\""+codetype+"\"}";
+    	 var data = separationMain+"&v=1.0&method=code.search&messageFormat=json&appKey=30&locale=zh_CN";
+    	 $.get($("#routerUrl").val(),data,function(data,textStatus){
+           var rs = data.codeManagerInterfacelist;
+           var codelist = new Array();
+			for(var i=0;i<rs.length;i++){
+				codelist[i]=rs[i].code+"-"+rs[i].codename;
+			}
+			
+			var x = ele.offsetLeft+(ele.offsetParent?getX(ele.offsetParent):ele.x?ele.x:0);
+    		var y = (ele.offsetParent?ele.offsetTop+getY(ele.offsetParent):ele.y?ele.y:0)+ele.offsetHeight;
+          if ($("#"+ele.id).val() == "") {
+                   AutoCompleteSelect("spanCode", ele.id, x,y,codelist);
+           }
+         });
+
     	
      	
             
@@ -119,23 +118,21 @@
 //  
 	   function selkeyup(ele,codetype,comcode){
 		 
-	    	 $.ajax({
-					type:"post",
-					url:"../codeAction!searchcode",
-					data:"code.codePK.codetype="+codetype+"&&code.comcode="+comcode,
-					dataType:"json",//预期得到类型
-					success:function(rs){
-						var codelist = new Array();
-						for(var i=0;i<rs.length;i++){
-							codelist[i]=rs[i].codePK.code+"-"+rs[i].codename;
-						}
-						 var x = ele.offsetLeft+(ele.offsetParent?getX(ele.offsetParent):ele.x?ele.x:0);
-			     		 var y = (ele.offsetParent?ele.offsetTop+getY(ele.offsetParent):ele.y?ele.y:0)+ele.offsetHeight;
-				   	 	AutoCompleteSelect("spanCode", ele.id, x,y,codelist);
-						
-					}	
-
-				});
+		   var separationMain="codeManagerInterface={\"codetype\":\""+codetype+"\"}";
+	    	 var data = separationMain+"&v=1.0&method=code.search&messageFormat=json&appKey=30&locale=zh_CN";
+	    	 $.get($("#routerUrl").val(),data,function(data,textStatus){
+	           var rs = data.codeManagerInterfacelist;
+	           var codelist = new Array();
+				for(var i=0;i<rs.length;i++){
+					codelist[i]=rs[i].code+"-"+rs[i].codename;
+				}
+				
+				var x = ele.offsetLeft+(ele.offsetParent?getX(ele.offsetParent):ele.x?ele.x:0);
+	    		var y = (ele.offsetParent?ele.offsetTop+getY(ele.offsetParent):ele.y?ele.y:0)+ele.offsetHeight;
+	         
+	                   AutoCompleteSelect("spanCode", ele.id, x,y,codelist);
+	          
+	         });
 	    	 
 	  		
 	   	

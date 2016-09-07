@@ -1,0 +1,10 @@
+-- Create table
+create table POLICYHOLDERPER
+(
+  IDNO     VARCHAR2(50),
+  RISKCODE VARCHAR2(20),
+  RISKTYPE VARCHAR2(20),
+  AMNT     NUMBER(30,2),
+  PREM     NUMBER(30,2)
+)
+

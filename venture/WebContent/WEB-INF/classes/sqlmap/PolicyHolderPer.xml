@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap >
+  <typeAlias type="com.zjlife.venture.main.domain.PolicyHolderPer" alias="policyHolderPer"/>
+  <resultMap id="policyHolderPerMap" class="policyHolderPer" >
+  
+    <result column="idno" property="idno" jdbcType="VARCHAR2" />
+    <result column="riskcode" property="riskcode" jdbcType="VARCHAR2" />
+    <result column="risktype" property="risktype" jdbcType="VARCHAR2" />
+    <result column="amnt" property="amnt" jdbcType="NUMBER" />
+    <result column="prem" property="prem" jdbcType="NUMBER" />
+  </resultMap>
+
+
+   
+    <select id="findHoldersByRiskCode" parameterClass="java.lang.String"  resultMap="policyHolderPerMap">
+        $sql$
+   </select>
+  
+  
+</sqlMap>

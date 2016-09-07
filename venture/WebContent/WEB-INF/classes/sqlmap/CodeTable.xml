@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap >
+  <typeAlias type="com.zjlife.venture.main.domain.CodeTable" alias="codeselect"/>
+  <resultMap id="codeSelectMap" class="codeselect" >
+    <result column="code" property="code" jdbcType="VARCHAR" />
+    <result column="codetype" property="codetype" jdbcType="VARCHAR" />
+    <result column="codename" property="codename" jdbcType="VARCHAR" />
+  </resultMap>
+  
+
+  
+   <!-- 根据用户名获得用户对象 -->
+   <select id="codeSearch"  resultMap="codeSelectMap">
+     select * from codetable where codetype = #value#
+  </select> 
+  
+  
+</sqlMap>

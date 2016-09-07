@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap >
+  <typeAlias type="com.zjlife.venture.main.domain.User" alias="user"/>
+  <resultMap id="userMap" class="user" >
+    <result column="usercode" property="usercode"  jdbcType="VARCHAR" />
+    <result column="password" property="password"  jdbcType="VARCHAR" />
+    <result column="username" property="username"  jdbcType="VARCHAR" />
+  </resultMap>
+  
+  
+  
+   <!-- 根据用户名获得用户对象 -->
+   <select id="userLogin" parameterClass="java.lang.String" resultMap="userMap">
+     select * from User where $sql$
+  </select> 
+  
+  <!-- 根据id获得用户对象 查看用户是否存在-->
+    <select id="getUserById" resultMap="userMap">
+     select * from User where usercode=#value#
+  </select> 
+  
+</sqlMap>

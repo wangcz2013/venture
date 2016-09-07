@@ -9,22 +9,29 @@
 
 <link rel='stylesheet' type='text/css' href='common/css/other.css'>
 <script type="text/javascript" src="js/jquery-1.9.1.js"></script>
+<script src="jquery.encoding.js"></script>
 <script type="text/javascript">
 
 $(function(){
     $("#logonBtn").click(function(){
-    	var separationMain="userMain={\"usercode\":\""+$('#usercode').val()+"\",\n"+
+    
+    	if($('#usercode').val()==""){
+    		alert("用户名不能为空");
+    		return;
+    	}
+    	if($('#password').val()==""){
+    		alert("密码不能为空");
+    		return;
+    	} 
+    	var separationMain="userInterface={\"usercode\":\""+$('#usercode').val()+"\",\n"+
 			"\"password\":\""+$('#password').val()+"\"}";
-
-		var data = separationMain+"&v=1.0&method=user.logon&messageFormat=json&appKey="+$('#appKey').val()+"&locale=zh_CN";
-        $.get($("#routerUrl").val(),data,function(data,textStatus){
-            $("#result").html("");
-            $("#result").fadeOut();
-            var date = (new Date());
-            var time = date.getHours()+":"+date.getMinutes()+":"+date.getSeconds();
-            $("#result").html("<b>time:</b>"+time+ "<br/>"+
-                              "<b>data:</b><br/>"+ JSON.stringify(data));
-            $("#result").fadeIn();
+		var data = separationMain+"&v=1.0&method=user.login&messageFormat=json&appKey=30&locale=zh_CN";
+        $.post($("#routerUrl").val(),data,function(data,textStatus){
+	        	if(data.islogon=="01"){
+	        		location.href="venture/riskalgorithm.jsp";
+	        	}else{
+	        		alert(data.msessage);
+	        	}
         });
     });
 })
@@ -46,12 +53,14 @@ $(function(){
 
  <div id = "text">
  <font size="6px" style="position:absolute;margin-left: 37%;margin-top: 7%;" ><b>累计风险保额系统</b></font>
- <input id="routerUrl" type="hidden" value="http://localhost:8080/venture/router"/> <br/>
+ <input id="routerUrl" type="hidden" value="http://localhost:8080/venture/router"/> 
+ 
+  
  </div>
 
 
 
-<form name="fm" method="post"  action="risk/LogInput.jsp">
+
         <table width="846" border="0" cellspacing="0" style="position:relative;margin-top:12%;margin-left:17%;">
           <tr> 
             <td width="744" align="center" valign="top"><table width="421" height="193" border="0" cellpadding="3" cellspacing="0">
@@ -96,7 +105,7 @@ $(function(){
 <!--添加层-->		
 		<span id="spanCode"  style="display: none; position:absolute; slategray; left: 736px; top: 264px; width: 229px; height: 44px;"> 
         </span> 
-      </form> </td>
+     </td>
   </tr>
 </table>
 

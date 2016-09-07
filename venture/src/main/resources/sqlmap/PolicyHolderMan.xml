@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap >
+  <typeAlias type="com.zjlife.venture.main.domain.PolicyHolderMan" alias="policyHolder"/>
+  <resultMap id="policyHolderMap" class="policyHolder" >
+   <result column="id" property="id" jdbcType="INTEGER" />
+    <result column="riskCode" property="riskCode" jdbcType="VARCHAR" />
+    <result column="name" property="name" jdbcType="VARCHAR" />
+    <result column="sex" property="sex" jdbcType="VARCHAR" />
+    <result column="birthDay" property="birthDay" jdbcType="VARCHAR" />
+    <result column="idType" property="idType" jdbcType="VARCHAR" />
+    <result column="idNo" property="idNo" jdbcType="VARCHAR" />
+    <result column="amnt" property="amnt" jdbcType="VARCHAR" />
+    <result column="prem" property="prem" jdbcType="VARCHAR" />
+  </resultMap>
+
+   <insert id="savePolicyHolder" parameterClass="policyHolder">
+      insert into PolicyHolderMan (riskCode,name,sex,birthDay,idType,idNo,amnt,prem) values (#riskCode#,#name#,#sex#,#birthDay#,#idType#,#idNo#,#amnt#,#prem#)
+   </insert>
+  
+  
+</sqlMap>
