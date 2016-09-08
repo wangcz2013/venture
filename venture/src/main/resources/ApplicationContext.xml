@@ -89,7 +89,7 @@
 		    <ref bean="sqlMapClient"/>
 		  </property>
 		</bean>
-		<bean id="UserDaoImp" class="com.zjlife.venture.main.repository.impl.UserDaoImp">
+		<bean id="userDaoImp" class="com.zjlife.venture.main.repository.impl.UserDaoImp">
 		   <property name="dataSource">
 		   <ref bean="dataSource"/>
 		 </property>
@@ -97,7 +97,22 @@
 		    <ref bean="sqlMapClient"/>
 		  </property>
 		</bean>
-
+		<bean id="riskReflectDaoImp" class="com.zjlife.venture.main.repository.impl.RiskReflectDaoImp">
+		   <property name="dataSource">
+		   <ref bean="dataSource"/>
+		 </property>
+		  <property name="sqlMapClient">
+		    <ref bean="sqlMapClient"/>
+		  </property>
+		</bean>
+		<bean id="riskAlgorithmDaoImp" class="com.zjlife.venture.main.repository.impl.RiskAlgorithmDaoImp">
+		   <property name="dataSource">
+		   <ref bean="dataSource"/>
+		 </property>
+		  <property name="sqlMapClient">
+		    <ref bean="sqlMapClient"/>
+		  </property>
+		</bean>
 
 	<!-- 个险核心的bean -->
 	

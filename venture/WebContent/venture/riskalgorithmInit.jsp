@@ -45,7 +45,7 @@ function initPlanGrid()
 
 		iArray[3]=new Array();
 		iArray[3][0]="是否未成年人";
-		iArray[3][1]="80px";
+		iArray[3][1]="290px";
 		iArray[3][2]=100;
 		iArray[3][3]=0;
 		
@@ -57,13 +57,13 @@ function initPlanGrid()
 		
 		iArray[5]=new Array();
 		iArray[5][0]="百分比";
-		iArray[5][1]="80px";
+		iArray[5][1]="280px";
 		iArray[5][2]=100;
 		iArray[5][3]=0;
 		
 		iArray[6]=new Array();
 		iArray[6][0]="算法";
-		iArray[6][1]="80px";
+		iArray[6][1]="300px";
 		iArray[6][2]=100;
 		iArray[6][3]=0;
 		

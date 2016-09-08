@@ -7,6 +7,8 @@ PUBLIC "-//iBATIS.com//DTD SQL Map Config 2.0//EN"
 <sqlMap resource="sqlmap/User.xml" />
 <sqlMap resource="sqlmap/CodeTable.xml" />
 <sqlMap resource="sqlmap/PolicyHolderMan.xml" />  
+<sqlMap resource="sqlmap/RiskReflect.xml" />
+<sqlMap resource="sqlmap/RiskAlgorithm.xml" />  
 
 
 </sqlMapConfig>

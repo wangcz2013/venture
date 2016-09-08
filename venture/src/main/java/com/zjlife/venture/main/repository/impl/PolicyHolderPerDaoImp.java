@@ -10,9 +10,9 @@ import com.zjlife.venture.main.repository.PolicyHolderPerDao;
 public class PolicyHolderPerDaoImp  extends SqlMapClientDaoSupport implements PolicyHolderPerDao{
 
 	@Override
-	public List<PolicyHolderPer> findHoldersByRiskCode(String idno,String riskcode) {
+	public List<PolicyHolderPer> findHoldersByRiskCode(String resultsql) {
 		// TODO Auto-generated method stub
-		return getSqlMapClientTemplate().queryForList("findHoldersByRiskCode","select idno,riskcode,risktype,sum(amnt) as amnt,sum(prem) as prem  from policyholderper where idno = '"+idno+"' and riskcode = '"+riskcode+"' group by idno,riskcode,risktype");
+		return getSqlMapClientTemplate().queryForList("findHoldersByRiskCode",resultsql);
 	}
 	
 

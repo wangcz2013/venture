@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap >
+  <typeAlias type="com.zjlife.venture.main.domain.RiskReflect" alias="riskReflect"/>
+  <resultMap id="riskReflectMap" class="riskReflect" >
+    <result column="reflectno" property="reflectno"  jdbcType="VARCHAR" />
+    <result column="reflectname" property="reflectname"  jdbcType="VARCHAR" />
+    <result column="cont" property="cont"  jdbcType="VARCHAR" />
+  </resultMap>
+  
+  
+
+  
+  <!-- 根据id获得用户对象 查看用户是否存在-->
+    <select id="findReflect" resultMap="riskReflectMap">
+     select * from riskReflect where reflectno=#value#
+  </select> 
+  
+</sqlMap>

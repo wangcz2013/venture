@@ -76,7 +76,8 @@
 							</div>							
 						</td>						
 					</tr>
-				</table>				
+				</table>	
+				<br/>			
 				<INPUT VALUE="首  页" TYPE=button onclick="" class="cssButton"/>
 				<INPUT VALUE="上一页" TYPE=button onclick="" class="cssButton"/>
 				<INPUT VALUE="下一页" TYPE=button onclick="" class="cssButton"/>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap >
+  <typeAlias type="com.zjlife.venture.main.domain.RiskAlgorithm" alias="riskAlgorithm"/>
+  <resultMap id="riskAlgorithmMap" class="riskAlgorithm" >
+   <result column="id" property="id" jdbcType="INTEGER" />
+    <result column="riskCode" property="riskCode" jdbcType="VARCHAR" />
+    <result column="risktype" property="risktype" jdbcType="VARCHAR" />
+    <result column="isadult" property="isadult" jdbcType="VARCHAR" />
+    <result column="formula" property="formula" jdbcType="VARCHAR" />
+    <result column="percent" property="percent" jdbcType="VARCHAR" />
+    <result column="algorithm" property="algorithm" jdbcType="VARCHAR" />
+    <result column="usercode" property="usercode" jdbcType="VARCHAR" />
+    <result column="makedate" property="makedate" jdbcType="DATE" />
+    <result column="maketime" property="maketime" jdbcType="VARCHAR" />
+    <result column="modifydate" property="modifydate" jdbcType="DATE" />
+    <result column="modifytime" property="modifytime" jdbcType="VARCHAR" />
+    
+  </resultMap>
+
+   <insert id="saveRiskAlgorithm" parameterClass="riskAlgorithm">
+     <!--insert into PolicyHolderMan (riskCode,name,sex,birthDay,idType,idNo,amnt,prem) values (#riskCode#,#name#,#sex#,#birthDay#,#idType#,#idNo#,#amnt#,#prem#) -->
+       insert into riskalgorithm (riskCode,risktype,isadult,formula,percent,algorithm,usercode,makedate,maketime,modifydate,modifytime) values
+       (#riskCode#,#risktype#,#isadult#,#formula#,#percent#,#algorithm#,#usercode#,#makedate#,#maketime#,#modifydate#,#modifytime#) 
+   </insert>
+    <select id="findRiskAlgorithm" parameterClass="java.lang.String"  resultMap="riskAlgorithmMap">
+       select * from riskalgorithm where  $sql$
+   </select>
+   
+  
+  
+</sqlMap>

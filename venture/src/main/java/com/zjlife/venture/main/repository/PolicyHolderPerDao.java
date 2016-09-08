@@ -5,5 +5,5 @@ import java.util.List;
 import com.zjlife.venture.main.domain.PolicyHolderPer;
 
 public interface PolicyHolderPerDao {
-	List<PolicyHolderPer> findHoldersByRiskCode(String idno,String riskcode);
+	List<PolicyHolderPer> findHoldersByRiskCode(String resultsql);
 }
