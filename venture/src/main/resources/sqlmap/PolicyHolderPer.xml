@@ -6,7 +6,6 @@
   
     <result column="idno" property="idno" jdbcType="VARCHAR2" />
     <result column="riskcode" property="riskcode" jdbcType="VARCHAR2" />
-    <result column="risktype" property="risktype" jdbcType="VARCHAR2" />
     <result column="amnt" property="amnt" jdbcType="NUMBER" />
     <result column="prem" property="prem" jdbcType="NUMBER" />
   </resultMap>

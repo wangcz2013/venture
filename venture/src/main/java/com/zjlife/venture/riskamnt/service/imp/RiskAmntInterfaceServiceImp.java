@@ -103,46 +103,64 @@ public class RiskAmntInterfaceServiceImp implements RiskAmntInterfaceService{
 		//去个险库中去查找历史投保单记录
 		List<PolicyHolderPer> holderlist = policyHolderPerDaoImp.findHoldersByRiskCode(sql);
 		System.out.print(holderlist.size());
-		for(int i=0;i<holderlist.size();i++){
-			resultDetailed = new ResultDetailedResponse();
-			System.out.println("idno"+i+":"+holderlist.get(i).getIdno());
-			System.out.println("riskcode"+i+":"+holderlist.get(i).getRiskcode());
-			System.out.println("risktype"+i+":"+holderlist.get(i).getRisktype());
-			System.out.println("amnt"+i+":"+holderlist.get(i).getAmnt());
-			System.out.println("prem"+i+":"+holderlist.get(i).getPrem());
-			List<RiskAlgorithm> risklist = riskAlgorithmDaoImp.findRiskAlgorithm(holderlist.get(i).getRiskcode(),"'00','01'");
-			//根据险种代码和是否未成年去作为条件去查询算法表，然后将计算好的保额保费还有有需要的值套入  risk.getAlgorithm() 中去计算保额保费
-			//比如数据库中有2014险种有四条， 2条未成年，一条与该项无关，一条成年  则查出  未成年和与该项无关的两天记录，分别将值传入进行计算保额和保费
-			BigDecimal sumAmnt;
-			BigDecimal sumPrem;
-			
-			for(int j=0;j<risklist.size();j++){
-				RiskAlgorithm risk = risklist.get(i);
-				System.out.println("AAA"+i+risk.getAlgorithm());
-				//保额
-				resultDetailed = new ResultDetailedResponse();
-				if(risk.getRisktype().equalsIgnoreCase("01")){
-					resultDetailed.setType("累计保额");
-				}else if(risk.getRisktype().equalsIgnoreCase("02")){
-					resultDetailed.setType("累计保费");
-				}
-				
-				if(risk.getFormula().equalsIgnoreCase("01")){
-					//将保额值放入
-					sumAmnt=new BigDecimal("100.01");
-					resultDetailed.setTotalAmnt(sumAmnt);
-					
-				}else if(risk.getFormula().equalsIgnoreCase("02")){
-					sumPrem=new BigDecimal("200.01");
-					resultDetailed.setTotalprem(sumPrem);
-				}
-				list.add(resultDetailed);
-				//将需要的值放入去计算保额和保费
+		PolicyHolderPer policyHolderPerSum = holderlist.get(0);
+		//被保人总保额和总保费
+		BigDecimal totalAmnt =new BigDecimal( policyHolderPerSum.getAmnt()+requst.getReauestMessage().getAmnt());
+		BigDecimal totalPrem =new BigDecimal( policyHolderPerSum.getAmnt()+requst.getReauestMessage().getPrem());
+		List<RiskAlgorithm> risklist = riskAlgorithmDaoImp.findRiskAlgorithm(policyHolderPerSum.getRiskcode(),"'00','01'");
+		//根据险种代码和是否未成年去作为条件去查询算法表，然后将计算好的保额保费还有有需要的值套入  risk.getAlgorithm() 中去计算保额保费
+		//比如数据库中有2014险种有四条， 2条未成年，一条与该项无关，一条成年  则查出  未成年和与该项无关的两天记录，分别将值传入进行计算保额和保费
+		BigDecimal sumAmnt;
+		BigDecimal sumPrem;
+		
+		List<RiskAlgorithm> sxlist = new ArrayList<RiskAlgorithm>();
+		List<RiskAlgorithm> zjlist = new ArrayList<RiskAlgorithm>();
+		for(int j=0;j<risklist.size();j++){
+			RiskAlgorithm risk = risklist.get(j);
+			if(risk.getRisktype().equalsIgnoreCase("01")){
+				sxlist.add(risk);
+				//resultDetailed.setType("累计保额");
+			}else if(risk.getRisktype().equalsIgnoreCase("02")){
+				zjlist.add(risk);
+				//resultDetailed.setType("累计保费");
 			}
 		}
+		if(sxlist.size()>0){
+			resultDetailed = new ResultDetailedResponse();
+			resultDetailed.setType("寿险");
+			for(int j=0;j<sxlist.size();j++){
+				System.out.println(sxlist.get(j).getAlgorithm());
+				if(sxlist.get(j).getFormula().equalsIgnoreCase("01")){
+					//存放算好的总保费
+					resultDetailed.setTotalAmnt(totalAmnt);	
+				}else if(sxlist.get(j).getFormula().equalsIgnoreCase("02")){
+					//存放算好的总保费
+					resultDetailed.setTotalprem(totalPrem);
+				}
+			}
+			list.add(resultDetailed);
+		}
+		if(zjlist.size()>0){
+			resultDetailed = new ResultDetailedResponse();
+			resultDetailed.setType("重疾");
+			for(int j=0;j<zjlist.size();j++){
+				if(zjlist.get(j).getFormula().equalsIgnoreCase("01")){
+					sumAmnt=new BigDecimal("600.01");
+					resultDetailed.setTotalAmnt(sumAmnt);	
+				}else if(zjlist.get(j).getFormula().equalsIgnoreCase("02")){
+					sumPrem=new BigDecimal("700.01");
+					resultDetailed.setTotalprem(sumPrem);
+				}
+			}
+			list.add(resultDetailed);
+		}
+			
+			
+			
+				
 		
 		
-		ventureInfo.setResultDetailedList(list);
+		ventureInfo.setResultDetailed(list);
 		response.setVentureInfo(ventureInfo);
 		response.setResponseTime(new Date().getTime());
 		

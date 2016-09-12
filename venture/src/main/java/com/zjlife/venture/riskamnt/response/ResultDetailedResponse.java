@@ -14,6 +14,8 @@ public class ResultDetailedResponse {
 	@XmlElement
 	private String type;
 	@XmlElement
+	private String formula;
+	@XmlElement
 	private BigDecimal totalAmnt;
 	@XmlElement
 	private BigDecimal totalprem ;
@@ -22,6 +24,12 @@ public class ResultDetailedResponse {
 	}
 	public void setType(String type) {
 		this.type = type;
+	}
+	public String getFormula() {
+		return formula;
+	}
+	public void setFormula(String formula) {
+		this.formula = formula;
 	}
 	public BigDecimal getTotalAmnt() {
 		return totalAmnt;
@@ -35,16 +43,16 @@ public class ResultDetailedResponse {
 	public void setTotalprem(BigDecimal totalprem) {
 		this.totalprem = totalprem;
 	}
-	
-	public ResultDetailedResponse() {
-		// TODO Auto-generated constructor stub
-	}
-	public ResultDetailedResponse(String type, BigDecimal totalAmnt,
-			BigDecimal totalprem) {
+	public ResultDetailedResponse(String type, String formula,
+			BigDecimal totalAmnt, BigDecimal totalprem) {
 		super();
 		this.type = type;
+		this.formula = formula;
 		this.totalAmnt = totalAmnt;
 		this.totalprem = totalprem;
+	}
+	public ResultDetailedResponse() {
+		// TODO Auto-generated constructor stub
 	}
 
 }

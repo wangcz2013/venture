@@ -24,7 +24,7 @@ public class VentureInfoResponse {
 	@XmlElement
 	private String idNo;
 	@XmlElement
-	List<ResultDetailedResponse> resultDetailedList;
+	List<ResultDetailedResponse> resultDetailed;
 	
 	public String getRiskCode() {
 		return riskCode;
@@ -62,16 +62,19 @@ public class VentureInfoResponse {
 	public void setIdNo(String idNo) {
 		this.idNo = idNo;
 	}
-	public List<ResultDetailedResponse> getResultDetailedList() {
-		return resultDetailedList;
+	
+	public List<ResultDetailedResponse> getResultDetailed() {
+		return resultDetailed;
 	}
-	public void setResultDetailedList(
-			List<ResultDetailedResponse> resultDetailedList) {
-		this.resultDetailedList = resultDetailedList;
+	public void setResultDetailed(List<ResultDetailedResponse> resultDetailed) {
+		this.resultDetailed = resultDetailed;
+	}
+	public VentureInfoResponse() {
+		// TODO Auto-generated constructor stub
 	}
 	public VentureInfoResponse(String riskCode, String name, String sex,
 			String birthDay, String idType, String idNo,
-			List<ResultDetailedResponse> resultDetailedList) {
+			List<ResultDetailedResponse> resultDetailed) {
 		super();
 		this.riskCode = riskCode;
 		this.name = name;
@@ -79,10 +82,9 @@ public class VentureInfoResponse {
 		this.birthDay = birthDay;
 		this.idType = idType;
 		this.idNo = idNo;
-		this.resultDetailedList = resultDetailedList;
+		this.resultDetailed = resultDetailed;
 	}
-	public VentureInfoResponse() {
-		// TODO Auto-generated constructor stub
-	}
+	
+	
 	
 }
